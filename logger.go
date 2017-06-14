@@ -113,7 +113,10 @@ func (l *Logger) log(level Level, message string, args ...interface{}) {
 	defer l.lock.RUnlock()
 	if l.level <= level {
 		str := l.formatter.Format(l.Name(), level, message, args...)
-		l.appender.Write(str)
+		_, err := l.appender.Write(str)
+		if err != nil {
+			//what we can do?
+		}
 	}
 }
 

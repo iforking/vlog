@@ -7,7 +7,7 @@ import (
 
 // the log dest
 type Appender interface {
-	Write(data string)
+	Write(data string) (written int, err error)
 }
 
 // appender write log to stdout
@@ -15,8 +15,8 @@ type ConsoleAppender struct {
 	file *os.File
 }
 
-func (ca *ConsoleAppender) Write(data string) {
-	ca.file.WriteString(data)
+func (ca *ConsoleAppender) Write(data string) (written int, err error) {
+	return ca.file.WriteString(data)
 }
 
 // create console appender, which write log to stdout
@@ -38,7 +38,8 @@ func NewNopAppender() Appender {
 	return &NopAppender{}
 }
 
-func (NopAppender) Write(data string) {
+func (NopAppender) Write(data string) (written int, err error) {
+	return len(data), nil
 }
 
 // appender write log into memory
@@ -50,6 +51,6 @@ func NewBytesAppender() Appender {
 	return &BytesAppender{}
 }
 
-func (b *BytesAppender) Write(data string) {
-	b.buffer.WriteString(data)
+func (b *BytesAppender) Write(data string) (written int, err error) {
+	return b.buffer.WriteString(data)
 }
