@@ -120,9 +120,16 @@ func NewFormatter(formatter string) (*Formatter, error) {
 				buffer = append(buffer, r)
 			}
 		default:
-			panic("unhandled state: " + strconv.Itoa(state))
+			return nil, errors.New("unhandled state: " + strconv.Itoa(state))
 		}
 	}
+	if state != NORMAL {
+		return nil, errors.New("format str does not finish rightly")
+	}
+	idx := len(helpers)
+	helpers = append(helpers, string(buffer))
+	types = append(types, uint32((STRING<<16)|idx))
+
 	return &Formatter{types: types, helpers: helpers}, nil
 }
 
