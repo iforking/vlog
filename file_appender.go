@@ -4,66 +4,83 @@ import (
 	"os"
 	"time"
 	"path/filepath"
-	"errors"
+	"io/ioutil"
+	"strings"
+	"sync/atomic"
+	"unsafe"
 )
 
 // Appender that write log to local file
 type FileAppender struct {
-	basePath    string
-	currentFile *os.File // current opened file
-	rotater     Rotater
-	len         uint64 // data byte has been written
-	recordNum   uint64 // records/lines has been written
-	normal      bool
+	path    string
+	file    unsafe.Pointer //*os.File, current opened file
+	rotater Rotater
+	normal  bool
 }
 
-func NewFileAppender(path string) (Appender, error) {
+// create new file appender.
+// path is the base path and filename of log file.
+// appender can be nil, then the file would not be rotated.
+func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 	file, err := openFile(path)
 	if err != nil {
 		return nil, err
 	}
-	fileInfo, err := file.Stat()
-	if err != nil {
-		fileInfo.Size()
+
+	if rotater != nil {
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return nil, err
+		}
+		suffixes := getLogSuffixed(path)
+		rotater.setInitStatus(fileInfo.ModTime(), fileInfo.Size(), suffixes)
 	}
-	return &FileAppender{basePath: path, currentFile: file}, nil
+	return &FileAppender{path: path, file: unsafe.Pointer(file), rotater: rotater}, nil
 }
 
 func (f *FileAppender) Write(data string) (written int, err error) {
-	f.len += uint64(len(data))
-	f.recordNum += 1
-	now := time.Now()
 	if f.rotater != nil {
-		shouldRotate, suffix := f.rotater.Check(f.len, f.recordNum, now)
+		shouldRotate, suffix := f.rotater.Check(time.Now(), len(data), 1)
 		if shouldRotate {
 			//rotate
-			err := f.rotateFile(f.basePath + "-" + suffix)
+			ext := filepath.Ext(f.path)
+			base := f.path[:len(f.path)-len(ext)]
+			err := f.rotateFile(base + "." + suffix + ext)
 			if err != nil {
-				// rotate failed, stopping writing
-				return 0, errors.New("rotate file error:" + err.Error())
+				// rotate failed, still use the current file?
+				print("rotate failed, stopping writing")
 			}
-			f.len = 0
-			f.recordNum = 0
 		}
 	}
 
-	return f.currentFile.WriteString(data)
+	return f.currentFile().WriteString(data)
+}
+
+func (f *FileAppender) currentFile() *os.File {
+	return (*os.File)(atomic.LoadPointer(&f.file))
+}
+
+func (f *FileAppender) swapFile(oldFile *os.File, file *os.File) bool {
+	return atomic.CompareAndSwapPointer(&f.file, unsafe.Pointer(oldFile), unsafe.Pointer(file))
 }
 
 func (f *FileAppender) rotateFile(renamePath string) error {
 	// should follow rename -> open new -> replace current -> close old steps.
 	// would os.Rename work in windows when file is open? on windows should use FileShare.Delete when open file
-	err := os.Rename(f.basePath, renamePath)
+	err := os.Rename(f.path, renamePath)
 	if err != nil {
 		return err
 	}
-	file, err := openFile(f.basePath)
+	file, err := openFile(f.path)
 	if err != nil {
 		return err
 	}
-	oldFile := f.currentFile
-	f.currentFile = file
-	oldFile.Close()
+	oldFile := f.currentFile()
+	if f.swapFile(oldFile, file) {
+		oldFile.Close()
+	} else {
+		//should not happen if appender act rightly ?
+	}
 	return nil
 }
 
@@ -84,6 +101,94 @@ func ensureParentPath(path string) error {
 	return nil
 }
 
+func getLogSuffixed(path string) []string {
+	dir, filename := filepath.Split(path)
+	extension := filepath.Ext(filename)
+	baseName := filename[:len(filename)-len(extension)]
+	files, _ := ioutil.ReadDir(dir)
+
+	var suffixes []string
+	for _, f := range files { // ignore error
+		logFileName := f.Name()
+		if !strings.HasPrefix(logFileName, baseName) {
+			continue
+		}
+		remain := logFileName[len(baseName):]
+		if len(remain) == 0 {
+			continue
+		}
+		idx := strings.Index(remain, extension)
+		if idx <= 1 {
+			continue
+		}
+		suffix := remain[1:idx]
+		suffixes = append(suffixes, suffix)
+	}
+	return suffixes
+}
+
 type Rotater interface {
-	Check(bytes uint64, records uint64, timestamp time.Time) (shouldRotate bool, suffixName string)
+	// tell rotater init log file status, so rotater can determine when and how to do next rotate.
+	// param lastModify is the modify time of last logfile
+	// param size is the initial log file size; if create new file, this param is 0.
+	// param suffixes is the existed suffixes of log files in current log directory.
+	setInitStatus(lastModify time.Time, size int64, suffixes []string)
+
+	// call this to determine if should do rotate.
+	// timestamp is the time the last log logged;
+	// bytes is the data size logged since last call to this method;
+	// records is new log num since last call to this method;
+	Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string)
+}
+
+// Rotate log file by time
+type TimeRotater struct {
+	duration     time.Duration
+	suffixFormat string
+	last         unsafe.Pointer // *time.Time
+}
+
+// create rotater rotate log by time
+func NewTimeRotater(duration time.Duration, suffixFormat string) Rotater {
+	return &TimeRotater{duration: duration, suffixFormat: suffixFormat}
+}
+
+// create rotater rotate log every hour
+func NewHourRotater() Rotater {
+	return NewTimeRotater(time.Hour, "2006-01-02-15")
+}
+
+// create rotater rotate log every day
+func NewDayRotater() Rotater {
+	return NewTimeRotater(time.Hour*24, "2006-01-02")
+}
+
+func (t *TimeRotater) lastTime() *time.Time {
+	return (*time.Time)(atomic.LoadPointer(&t.last))
+}
+
+func (t *TimeRotater) setLastTime(ts *time.Time) {
+	atomic.StorePointer(&t.last, unsafe.Pointer(ts))
+}
+
+func (t *TimeRotater) swapLastTime(oldTime *time.Time, ts *time.Time) bool {
+	return atomic.CompareAndSwapPointer(&t.last, unsafe.Pointer(oldTime), unsafe.Pointer(ts))
+}
+
+func (t *TimeRotater) Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string) {
+	intervalSeconds := int64(t.duration / time.Second)
+	last := t.lastTime()
+	diff := timestamp.Unix()/intervalSeconds - last.Unix()/intervalSeconds
+	if diff <= 0 {
+		return false, ""
+	}
+	suffix := last.Format(t.suffixFormat)
+	if t.swapLastTime(last, &timestamp) {
+		return true, suffix
+	}
+	return false, ""
+}
+
+func (t *TimeRotater) setInitStatus(lastModify time.Time, size int64, suffixes []string) {
+	t.setLastTime(&lastModify)
 }

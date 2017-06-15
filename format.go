@@ -134,7 +134,7 @@ func NewFormatter(formatter string) (*Formatter, error) {
 }
 
 // return formatter with default format
-func DefaultFormatter() *Formatter {
+func NewDefaultFormatter() *Formatter {
 	formatter, err := NewFormatter("{time} [{level}] {logger} - {message}\n")
 	if err != nil {
 		panic(err)

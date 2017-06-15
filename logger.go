@@ -1,7 +1,7 @@
 package verylog
 
 import (
-	"sync"
+	"sync/atomic"
 )
 
 type Level uint32
@@ -33,10 +33,9 @@ const (
 
 type Logger struct {
 	name      string
-	level     Level
-	appender  Appender
-	formatter *Formatter
-	lock      sync.RWMutex
+	level     *atomic.Value //Level
+	appender  *atomic.Value //*Appender
+	formatter *atomic.Value //*Formatter
 }
 
 // the name of this logger
@@ -46,36 +45,29 @@ func (l *Logger) Name() string {
 
 // set new Level to this logger. the default log level is DEBUG
 func (l *Logger) SetLevel(level Level) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.level = level
+	l.level.Store(level)
+}
+
+func (l *Logger) loadLevel() Level {
+	return l.level.Load().(Level)
 }
 
 // set appender for this logger
 func (l *Logger) SetAppender(appender Appender) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.appender = appender
+	l.appender.Store(&appender)
+}
+
+func (l *Logger) loadAppender() Appender {
+	return *l.appender.Load().(*Appender)
 }
 
 // set format for this logger
-// below vars can be used in format string:
-// {file} filename
-// {package} package name
-// {line} line number
-// {function} function name
-// {time} time
-// {logger} the logger name
-// {message} the log message
-// use {{ to escape  {, use }} to escape }
-func (l *Logger) SetFormatter(format string) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	formatter, err := NewFormatter(format)
-	if err != nil {
-		panic(err)
-	}
-	l.formatter = formatter
+func (l *Logger) SetFormatter(formatter *Formatter) {
+	l.formatter.Store(formatter)
+}
+
+func (l *Logger) loadFormatter() *Formatter {
+	return l.formatter.Load().(*Formatter)
 }
 
 // log message with trace level
@@ -109,11 +101,9 @@ func (l *Logger) Critical(message string, args ...interface{}) {
 }
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {
-	l.lock.RLock()
-	defer l.lock.RUnlock()
-	if l.level <= level {
-		str := l.formatter.Format(l.Name(), level, message, args...)
-		_, err := l.appender.Write(str)
+	if l.loadLevel() <= level {
+		str := l.loadFormatter().Format(l.Name(), level, message, args...)
+		_, err := l.loadAppender().Write(str)
 		if err != nil {
 			//what we can do?
 		}
@@ -123,10 +113,13 @@ func (l *Logger) log(level Level, message string, args ...interface{}) {
 func createLogger(name string) *Logger {
 	logger := &Logger{
 		name:      name,
-		level:     DEFAULT_LEVEL,
-		appender:  NewConsoleAppender(),
-		formatter: DefaultFormatter(),
+		level:     &atomic.Value{},
+		appender:  &atomic.Value{},
+		formatter: &atomic.Value{},
 	}
+	logger.SetLevel(DEFAULT_LEVEL)
+	logger.SetAppender(NewConsoleAppender())
+	logger.SetFormatter(NewDefaultFormatter())
 	return logger
 }
 

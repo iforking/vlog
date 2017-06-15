@@ -7,7 +7,7 @@ import (
 )
 
 func TestFormatter_FormatMessage(t *testing.T) {
-	formatter := DefaultFormatter()
+	formatter := NewDefaultFormatter()
 	assert.Equal(t, "This is a test", strings.Join(formatter.formatMessage("This is a test"), ""))
 	assert.Equal(t, "This is a test", strings.Join(formatter.formatMessage("This is a", "test"), ""))
 	assert.Equal(t, "This is 1", strings.Join(formatter.formatMessage("This is", 1), ""))
