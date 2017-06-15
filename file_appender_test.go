@@ -76,3 +76,14 @@ func TestTimeRotater(t *testing.T) {
 	b, s = r.Check(ts.Add(time.Hour), 100, 1)
 	assert.False(t, b)
 }
+
+func TestSizeRotater(t *testing.T) {
+	rotater := NewSizeRotater(1024 * 1024)
+	rotater.setInitStatus(time.Now(), 1024*1023, []string{"xxxx", "123", "0014", "012"})
+
+	b, s := rotater.Check(time.Now(), 1023, 1)
+	assert.False(t, b)
+	b, s = rotater.Check(time.Now(), 1, 1)
+	assert.True(t, b)
+	assert.Equal(t, "00124", s)
+}

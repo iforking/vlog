@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"unsafe"
+	"fmt"
+	"strconv"
 )
 
 // Appender that write log to local file
@@ -171,7 +173,7 @@ func (t *TimeRotater) setLastTime(ts *time.Time) {
 	atomic.StorePointer(&t.last, unsafe.Pointer(ts))
 }
 
-func (t *TimeRotater) swapLastTime(oldTime *time.Time, ts *time.Time) bool {
+func (t *TimeRotater) casLastTime(oldTime *time.Time, ts *time.Time) bool {
 	return atomic.CompareAndSwapPointer(&t.last, unsafe.Pointer(oldTime), unsafe.Pointer(ts))
 }
 
@@ -183,7 +185,7 @@ func (t *TimeRotater) Check(timestamp time.Time, bytes int, records int) (should
 		return false, ""
 	}
 	suffix := last.Format(t.suffixFormat)
-	if t.swapLastTime(last, &timestamp) {
+	if t.casLastTime(last, &timestamp) {
 		return true, suffix
 	}
 	return false, ""
@@ -191,4 +193,62 @@ func (t *TimeRotater) Check(timestamp time.Time, bytes int, records int) (should
 
 func (t *TimeRotater) setInitStatus(lastModify time.Time, size int64, suffixes []string) {
 	t.setLastTime(&lastModify)
+}
+
+// rotate based on file size
+type SizeRotater struct {
+	rotateSize  int64
+	size        int64
+	seq         int64
+	SuffixWidth int
+}
+
+// create file size rotater, rotate log file when file size larger than rotateSize, in bytes
+func NewSizeRotater(rotateSize int64) Rotater {
+	return &SizeRotater{rotateSize: rotateSize, SuffixWidth: 5}
+}
+
+func (sr *SizeRotater) setInitStatus(lastModify time.Time, size int64, suffixes []string) {
+	sr.setSize(size)
+	var maxSeq = 0
+	for _, suffix := range suffixes {
+		if seq, err := strconv.Atoi(suffix); err == nil {
+			if seq > maxSeq {
+				maxSeq = seq
+			}
+		}
+	}
+	sr.setSeq(int64(maxSeq))
+}
+
+func (sr *SizeRotater) Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string) {
+	size := sr.addSize(int64(bytes))
+	if size < sr.rotateSize {
+		return false, ""
+	}
+	if sr.casSize(size, 0) {
+		seq := sr.increaseSeq()
+		seqStr := fmt.Sprintf("%0"+strconv.Itoa(sr.SuffixWidth)+"d", seq)
+		return true, seqStr
+	}
+	return false, ""
+}
+
+func (sr *SizeRotater) loadSize() int64 {
+	return atomic.LoadInt64(&sr.size)
+}
+func (sr *SizeRotater) setSize(size int64) {
+	atomic.StoreInt64(&sr.size, size)
+}
+func (sr *SizeRotater) casSize(oldSize int64, size int64) bool {
+	return atomic.CompareAndSwapInt64(&sr.size, oldSize, size)
+}
+func (sr *SizeRotater) addSize(delta int64) int64 {
+	return atomic.AddInt64(&sr.size, delta)
+}
+func (sr *SizeRotater) setSeq(seq int64) {
+	atomic.StoreInt64(&sr.seq, seq)
+}
+func (sr *SizeRotater) increaseSeq() int64 {
+	return atomic.AddInt64(&sr.seq, 1)
 }
