@@ -67,8 +67,8 @@ func NewConsoleAppender(name string) Appender {
 }
 
 // create console appender, which write log to stderr
-func NewConsole2Appender() Appender {
-	return &ConsoleAppender{file: os.Stderr}
+func NewConsole2Appender(name string) Appender {
+	return &ConsoleAppender{file: os.Stderr, AppenderMixin: NewAppenderMixin(name)}
 }
 
 // appender discard all logs

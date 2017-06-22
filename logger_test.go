@@ -49,3 +49,12 @@ func TestLoggerJudge(t *testing.T) {
 	assert.True(t, logger.IsTraceEnable())
 	assert.True(t, logger.IsInfoEnable())
 }
+
+func TestLogger_AddAppender(t *testing.T) {
+	logger := CurrentPackageLogger()
+	assert.Equal(t, 1, len(logger.Appenders()))
+	appender := NewConsole2Appender("stderr")
+	logger.AddAppender(appender)
+	assert.Equal(t, 2, len(logger.Appenders()))
+	assert.Equal(t, appender, logger.Appenders()[1])
+}

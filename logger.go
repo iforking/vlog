@@ -2,6 +2,7 @@ package vlog
 
 import (
 	"sync/atomic"
+	"unsafe"
 )
 
 type Level uint32
@@ -33,8 +34,8 @@ const (
 
 type Logger struct {
 	name      string
-	level     atomic.Value //Level
-	appenders atomic.Value //*[]Appender
+	level     atomic.Value   //Level
+	appenders unsafe.Pointer //*[]Appender
 }
 
 // the name of this logger
@@ -47,22 +48,34 @@ func (l *Logger) SetLevel(level Level) {
 	l.level.Store(level)
 }
 
-func (l *Logger) loadLevel() Level {
+// current level of this logger
+func (l *Logger) Level() Level {
 	iface := l.level.Load()
 	return iface.(Level)
 }
 
-// set appender for this logger
+// Set appender for this logger
 func (l *Logger) SetAppenders(appender []Appender) {
-	l.appenders.Store(&appender)
+	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appender))
 }
 
+// The appenders this logger have
 func (l *Logger) Appenders() []Appender {
-	iface := l.appenders.Load()
-	if iface == nil {
-		return nil
+	return *(*[]Appender)(atomic.LoadPointer(&l.appenders))
+}
+
+// Add one new appender to logger
+func (l *Logger) AddAppender(appender Appender) {
+	for {
+		p := atomic.LoadPointer(&l.appenders)
+		appenders := *(*[]Appender)(p)
+		newAppenders := make([]Appender, len(appenders)+1)
+		copy(newAppenders, appenders)
+		newAppenders[len(appenders)] = appender
+		if atomic.CompareAndSwapPointer(&l.appenders, p, unsafe.Pointer(&newAppenders)) {
+			break
+		}
 	}
-	return *iface.(*[]Appender)
 }
 
 // log message with trace level
@@ -97,36 +110,36 @@ func (l *Logger) Critical(message string, args ...interface{}) {
 
 // if this logger log trace message
 func (l *Logger) IsTraceEnable() bool {
-	return l.loadLevel() <= TRACE
+	return l.Level() <= TRACE
 }
 
 // if this logger log debug message
 func (l *Logger) IsDebugEnable() bool {
-	return l.loadLevel() <= DEBUG
+	return l.Level() <= DEBUG
 }
 
 // if this logger log info message
 func (l *Logger) IsInfoEnable() bool {
-	return l.loadLevel() <= INFO
+	return l.Level() <= INFO
 }
 
 // if this logger log warn level message
 func (l *Logger) IsWarnEnable() bool {
-	return l.loadLevel() <= WARN
+	return l.Level() <= WARN
 }
 
 // if this logger log error message
 func (l *Logger) IsErrorEnable() bool {
-	return l.loadLevel() <= ERROR
+	return l.Level() <= ERROR
 }
 
 // if this logger log critical message
 func (l *Logger) IsCriticalEnable() bool {
-	return l.loadLevel() <= CRITICAL
+	return l.Level() <= CRITICAL
 }
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {
-	if l.loadLevel() <= level {
+	if l.Level() <= level {
 		for _, appender := range l.Appenders() {
 			transformer := appender.Transformer()
 			data := transformer.Transform(l.Name(), level, message, args)
