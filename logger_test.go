@@ -1,4 +1,4 @@
-package verylog
+package vlog
 
 import (
 	"testing"
@@ -9,14 +9,14 @@ import (
 
 func TestLogger_Critical(t *testing.T) {
 	logger := CurrentPackageLogger()
-	assert.Equal(t, "github.com/clearthesky/verylog", logger.Name())
+	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
 	assert.Equal(t, DEFAULT_LEVEL, logger.level.Load().(Level))
 
 	appender := NewBytesAppender()
 	logger.SetAppender(appender)
 	logger.Info("this is a test")
 	assert.True(t, strings.HasSuffix(appender.(*BytesAppender).buffer.String(),
-		" [INFO] github.com/clearthesky/verylog - this is a test\n"))
+		" [INFO] github.com/clearthesky/vlog - this is a test\n"))
 
 	appender = NewBytesAppender()
 	logger.SetAppender(appender)
@@ -24,7 +24,7 @@ func TestLogger_Critical(t *testing.T) {
 	logger.SetFormatter(formatter)
 	logger.Info("this is a test")
 	date := time.Now().Format("2006-01-02")
-	assert.Equal(t, date+" github.com/clearthesky/verylog/logger_test.go - this is a test\n",
+	assert.Equal(t, date+" github.com/clearthesky/vlog/logger_test.go - this is a test\n",
 		appender.(*BytesAppender).buffer.String())
 
 	logger2 := CurrentPackageLogger()

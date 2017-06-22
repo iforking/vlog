@@ -1,4 +1,4 @@
-package verylog
+package vlog
 
 import (
 	"testing"

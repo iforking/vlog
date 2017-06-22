@@ -1,4 +1,4 @@
-package verylog
+package vlog
 
 import (
 	"sync/atomic"
@@ -98,6 +98,36 @@ func (l *Logger) Error(message string, args ...interface{}) {
 // log message with critical level
 func (l *Logger) Critical(message string, args ...interface{}) {
 	l.log(CRITICAL, message, args...)
+}
+
+// if this logger log trace message
+func (l *Logger) IsTraceEnable() bool {
+	return l.loadLevel() <= TRACE
+}
+
+// if this logger log debug message
+func (l *Logger) IsDebugEnable() bool {
+	return l.loadLevel() <= DEBUG
+}
+
+// if this logger log info message
+func (l *Logger) IsInfoEnable() bool {
+	return l.loadLevel() <= INFO
+}
+
+// if this logger log warn level message
+func (l *Logger) IsWarnEnable() bool {
+	return l.loadLevel() <= WARN
+}
+
+// if this logger log error message
+func (l *Logger) IsErrorEnable() bool {
+	return l.loadLevel() <= ERROR
+}
+
+// if this logger log critical message
+func (l *Logger) IsCriticalEnable() bool {
+	return l.loadLevel() <= CRITICAL
 }
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {

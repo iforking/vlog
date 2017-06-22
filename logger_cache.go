@@ -1,4 +1,4 @@
-package verylog
+package vlog
 
 import (
 	"sync"
@@ -76,7 +76,7 @@ func SetAppender(prefix string, appender Appender) {
 }
 
 // set formatter, of all loggers, which name has prefix segments, split by slash
-func setFormatter(prefix string, formatter *Formatter) {
+func SetFormatter(prefix string, formatter *Formatter) {
 	loggers := logCache.filter(prefix)
 	for _, logger := range loggers {
 		logger.SetFormatter(formatter)
