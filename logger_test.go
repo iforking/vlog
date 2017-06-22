@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestLogger_Critical(t *testing.T) {
+func TestLogger(t *testing.T) {
 	logger := CurrentPackageLogger()
 	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
 	assert.Equal(t, DEFAULT_LEVEL, logger.level.Load().(Level))
@@ -29,4 +29,23 @@ func TestLogger_Critical(t *testing.T) {
 
 	logger2 := CurrentPackageLogger()
 	assert.Equal(t, logger, logger2)
+}
+
+func TestLoggerJudge(t *testing.T) {
+	logger := CurrentPackageLogger()
+	logger.SetLevel(OFF)
+	assert.False(t, logger.IsTraceEnable())
+	assert.False(t, logger.IsErrorEnable())
+
+	logger.SetLevel(CRITICAL)
+	assert.True(t, logger.IsCriticalEnable())
+	assert.False(t, logger.IsErrorEnable())
+
+	logger.SetLevel(ERROR)
+	assert.True(t, logger.IsErrorEnable())
+	assert.False(t, logger.IsInfoEnable())
+
+	logger.SetLevel(TRACE)
+	assert.True(t, logger.IsTraceEnable())
+	assert.True(t, logger.IsInfoEnable())
 }
