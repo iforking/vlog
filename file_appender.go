@@ -14,6 +14,7 @@ import (
 
 // Appender that write log to local file
 type FileAppender struct {
+	*AppenderMixin
 	path    string
 	file    unsafe.Pointer //*os.File, current opened file
 	rotater Rotater
@@ -23,7 +24,7 @@ type FileAppender struct {
 // create new file appender.
 // path is the base path and filename of log file.
 // appender can be nil, then the file would not be rotated.
-func NewFileAppender(path string, rotater Rotater) (Appender, error) {
+func NewFileAppender(name string, path string, rotater Rotater) (Appender, error) {
 	file, err := openFile(path)
 	if err != nil {
 		return nil, err
@@ -37,7 +38,12 @@ func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 		suffixes := getLogSuffixed(path)
 		rotater.setInitStatus(fileInfo.ModTime(), fileInfo.Size(), suffixes)
 	}
-	return &FileAppender{path: path, file: unsafe.Pointer(file), rotater: rotater}, nil
+	return &FileAppender{
+		path:          path,
+		file:          unsafe.Pointer(file),
+		rotater:       rotater,
+		AppenderMixin: NewAppenderMixin(name),
+	}, nil
 }
 
 func (f *FileAppender) Append(data []byte) (written int, err error) {

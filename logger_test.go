@@ -12,16 +12,16 @@ func TestLogger(t *testing.T) {
 	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
 	assert.Equal(t, DEFAULT_LEVEL, logger.level.Load().(Level))
 
-	appender := NewBytesAppender()
+	appender := NewBytesAppender("bytes")
 	logger.SetAppender(appender)
 	logger.Info("this is a test")
 	assert.True(t, strings.HasSuffix(appender.(*BytesAppender).buffer.String(),
 		" [INFO] github.com/clearthesky/vlog - this is a test\n"))
 
-	appender = NewBytesAppender()
+	appender = NewBytesAppender("bytes2")
+	transformer, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
+	appender.SetTransformer(transformer)
 	logger.SetAppender(appender)
-	formatter, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
-	logger.SetFormatter(formatter)
 	logger.Info("this is a test")
 	date := time.Now().Format("2006-01-02")
 	assert.Equal(t, date+" github.com/clearthesky/vlog/logger_test.go - this is a test\n",

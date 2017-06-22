@@ -20,9 +20,16 @@ const (
 	MESSAGE  = 21
 )
 
-// Transformer convert one log record to byte array data
+// Transformer convert one log record to byte array data.
+// Transformer should can be share across goroutines, and user Should always reuse transformers.
 type Transformer interface {
-	Transform(logger string, level Level, message string, args ...interface{}) []byte
+	Transform(logger string, level Level, message string, args []interface{}) []byte
+}
+
+var defaultTransformer = NewDefaultPatternTransformer()
+// The default transformer used if not set
+func DefaultTransformer() Transformer {
+	return defaultTransformer
 }
 
 // Transform one log record using pattern, to string
@@ -148,7 +155,7 @@ func NewDefaultPatternTransformer() Transformer {
 }
 
 // format log data to byte array data
-func (f *PatternTransformer) Transform(logger string, level Level, message string, args ...interface{}) []byte {
+func (f *PatternTransformer) Transform(logger string, level Level, message string, args []interface{}) []byte {
 
 	logItems := []string{}
 	var caller *caller
