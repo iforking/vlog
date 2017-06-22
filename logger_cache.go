@@ -66,12 +66,3 @@ func SetLevel(prefix string, level Level) {
 		logger.SetLevel(level)
 	}
 }
-
-// set appender to all loggers, which name has prefix segments, split by slash
-func SetAppender(prefix string, appender Appender) {
-	loggers := logCache.filter(prefix)
-	for _, logger := range loggers {
-		logger.SetAppender(appender)
-	}
-}
-

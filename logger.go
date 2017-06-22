@@ -32,9 +32,9 @@ const (
 )
 
 type Logger struct {
-	name     string
-	level    atomic.Value //Level
-	appender atomic.Value //*Appender
+	name      string
+	level     atomic.Value //Level
+	appenders atomic.Value //*[]Appender
 }
 
 // the name of this logger
@@ -53,16 +53,16 @@ func (l *Logger) loadLevel() Level {
 }
 
 // set appender for this logger
-func (l *Logger) SetAppender(appender Appender) {
-	l.appender.Store(&appender)
+func (l *Logger) SetAppenders(appender []Appender) {
+	l.appenders.Store(&appender)
 }
 
-func (l *Logger) loadAppender() Appender {
-	iface := l.appender.Load()
+func (l *Logger) Appenders() []Appender {
+	iface := l.appenders.Load()
 	if iface == nil {
 		return nil
 	}
-	return *iface.(*Appender)
+	return *iface.(*[]Appender)
 }
 
 // log message with trace level
@@ -127,12 +127,13 @@ func (l *Logger) IsCriticalEnable() bool {
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {
 	if l.loadLevel() <= level {
-		appender := l.loadAppender()
-		transformer := appender.Transformer()
-		data := transformer.Transform(l.Name(), level, message, args)
-		_, err := l.loadAppender().Append(data)
-		if err != nil {
-			//what we can do?
+		for _, appender := range l.Appenders() {
+			transformer := appender.Transformer()
+			data := transformer.Transform(l.Name(), level, message, args)
+			_, err := appender.Append(data)
+			if err != nil {
+				//what we can do?
+			}
 		}
 	}
 }
@@ -142,7 +143,7 @@ func createLogger(name string) *Logger {
 		name: name,
 	}
 	logger.SetLevel(DEFAULT_LEVEL)
-	logger.SetAppender(DefaultAppender())
+	logger.SetAppenders([]Appender{DefaultAppender()})
 	return logger
 }
 
