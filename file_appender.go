@@ -40,7 +40,7 @@ func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 	return &FileAppender{path: path, file: unsafe.Pointer(file), rotater: rotater}, nil
 }
 
-func (f *FileAppender) Write(data string) (written int, err error) {
+func (f *FileAppender) Append(data []byte) (written int, err error) {
 	if f.rotater != nil {
 		shouldRotate, suffix := f.rotater.Check(time.Now(), len(data), 1)
 		if shouldRotate {
@@ -55,7 +55,7 @@ func (f *FileAppender) Write(data string) (written int, err error) {
 		}
 	}
 
-	return f.currentFile().WriteString(data)
+	return f.currentFile().Write(data)
 }
 
 func (f *FileAppender) currentFile() *os.File {

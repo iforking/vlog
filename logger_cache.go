@@ -76,7 +76,7 @@ func SetAppender(prefix string, appender Appender) {
 }
 
 // set formatter, of all loggers, which name has prefix segments, split by slash
-func SetFormatter(prefix string, formatter *Formatter) {
+func SetFormatter(prefix string, formatter Transformer) {
 	loggers := logCache.filter(prefix)
 	for _, logger := range loggers {
 		logger.SetFormatter(formatter)

@@ -12,7 +12,7 @@ func TestFileAppender_Write(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove("test_file.log")
 
-	appender.Write("This is a test\n")
+	appender.Append([]byte("This is a test\n"))
 }
 
 func TestFileAppender_Write2(t *testing.T) {
@@ -20,7 +20,7 @@ func TestFileAppender_Write2(t *testing.T) {
 	defer os.RemoveAll("multi/")
 	assert.NoError(t, err)
 
-	appender.Write("This is a test\n")
+	appender.Append([]byte("This is a test\n"))
 }
 
 func TestGetLogSuffixes(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGetLogSuffixes(t *testing.T) {
 func TestLogRotate(t *testing.T) {
 	defer os.RemoveAll("logs/")
 	a, err := NewFileAppender("logs/test_file.log", nil)
-	a.Write("first log\n")
+	a.Append([]byte("first log\n"))
 	assert.NoError(t, err)
 	appender := a.(*FileAppender)
 	appender.rotateFile("logs/test_file.1234.log")

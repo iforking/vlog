@@ -20,7 +20,7 @@ func TestLogger(t *testing.T) {
 
 	appender = NewBytesAppender()
 	logger.SetAppender(appender)
-	formatter, _ := NewFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
+	formatter, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
 	logger.SetFormatter(formatter)
 	logger.Info("this is a test")
 	date := time.Now().Format("2006-01-02")

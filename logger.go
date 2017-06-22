@@ -35,7 +35,7 @@ type Logger struct {
 	name      string
 	level     *atomic.Value //Level
 	appender  *atomic.Value //*Appender
-	formatter *atomic.Value //*Formatter
+	formatter *atomic.Value //*Transformer
 }
 
 // the name of this logger
@@ -62,12 +62,12 @@ func (l *Logger) loadAppender() Appender {
 }
 
 // set format for this logger
-func (l *Logger) SetFormatter(formatter *Formatter) {
-	l.formatter.Store(formatter)
+func (l *Logger) SetFormatter(formatter Transformer) {
+	l.formatter.Store(&formatter)
 }
 
-func (l *Logger) loadFormatter() *Formatter {
-	return l.formatter.Load().(*Formatter)
+func (l *Logger) loadFormatter() Transformer {
+	return *l.formatter.Load().(*Transformer)
 }
 
 // log message with trace level
@@ -132,8 +132,8 @@ func (l *Logger) IsCriticalEnable() bool {
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {
 	if l.loadLevel() <= level {
-		str := l.loadFormatter().Format(l.Name(), level, message, args...)
-		_, err := l.loadAppender().Write(str)
+		str := l.loadFormatter().Transform(l.Name(), level, message, args...)
+		_, err := l.loadAppender().Append(str)
 		if err != nil {
 			//what we can do?
 		}
@@ -149,7 +149,7 @@ func createLogger(name string) *Logger {
 	}
 	logger.SetLevel(DEFAULT_LEVEL)
 	logger.SetAppender(NewConsoleAppender())
-	logger.SetFormatter(NewDefaultFormatter())
+	logger.SetFormatter(NewDefaultPatternTransformer())
 	return logger
 }
 

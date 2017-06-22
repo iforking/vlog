@@ -20,8 +20,13 @@ const (
 	MESSAGE  = 21
 )
 
-// format log output
-type Formatter struct {
+// Transformer convert one log record to byte array data
+type Transformer interface {
+	Transform(logger string, level Level, message string, args ...interface{}) []byte
+}
+
+// Transform one log record using pattern, to string
+type PatternTransformer struct {
 	types   []uint32
 	helpers []string
 }
@@ -35,7 +40,7 @@ type Formatter struct {
 // {logger} the logger name
 // {message} the log message
 // use {{ to escape  {, use }} to escape }
-func NewFormatter(formatter string) (*Formatter, error) {
+func NewPatternFormatter(formatter string) (Transformer, error) {
 	type State int
 	const (
 		NORMAL      = 0
@@ -130,20 +135,20 @@ func NewFormatter(formatter string) (*Formatter, error) {
 	helpers = append(helpers, string(buffer))
 	types = append(types, uint32((STRING<<16)|idx))
 
-	return &Formatter{types: types, helpers: helpers}, nil
+	return &PatternTransformer{types: types, helpers: helpers}, nil
 }
 
 // return formatter with default format
-func NewDefaultFormatter() *Formatter {
-	formatter, err := NewFormatter("{time} [{level}] {logger} - {message}\n")
+func NewDefaultPatternTransformer() Transformer {
+	formatter, err := NewPatternFormatter("{time} [{level}] {logger} - {message}\n")
 	if err != nil {
 		panic(err)
 	}
 	return formatter
 }
 
-// format log data to string
-func (f *Formatter) Format(logger string, level Level, message string, args ...interface{}) string {
+// format log data to byte array data
+func (f *PatternTransformer) Transform(logger string, level Level, message string, args ...interface{}) []byte {
 
 	logItems := []string{}
 	var caller *caller
@@ -194,10 +199,10 @@ func (f *Formatter) Format(logger string, level Level, message string, args ...i
 		}
 	}
 
-	return strings.Join(logItems, "")
+	return []byte(strings.Join(logItems, ""))
 }
 
-func (f *Formatter) formatMessage(message string, args ...interface{}) []string {
+func (f *PatternTransformer) formatMessage(message string, args ...interface{}) []string {
 	argNum := len(args)
 	items := strings.SplitN(message, "{}", argNum+1)
 
@@ -217,6 +222,6 @@ func (f *Formatter) formatMessage(message string, args ...interface{}) []string 
 	return results
 }
 
-func (f *Formatter) formatArg(arg interface{}) string {
+func (f *PatternTransformer) formatArg(arg interface{}) string {
 	return fmt.Sprintf("%v", arg)
 }
