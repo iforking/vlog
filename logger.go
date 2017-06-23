@@ -33,6 +33,15 @@ var levelNames = map[Level]string{
 	CRITICAL: "CRITICAL",
 }
 
+var levelNamesReverse = map[string]Level{
+	"TRACE":    TRACE,
+	"DEBUG":    DEBUG,
+	"INFO":     INFO,
+	"WARN":     WARN,
+	"ERROR":    ERROR,
+	"CRITICAL": CRITICAL,
+}
+
 func (l Level) Name() string {
 	return levelNames[l]
 }
@@ -51,7 +60,7 @@ const (
 
 type Logger struct {
 	name      string
-	level     atomic.Value   //Level
+	level     *atomic.Value  //Level
 	appenders unsafe.Pointer //*[]Appender
 }
 

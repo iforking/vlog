@@ -9,8 +9,6 @@ import (
 // Appender write the log to one destination.
 // Appender Should  be reused across loggers.
 type Appender interface {
-	// the name of this appender
-	Name() string
 	// append new data
 	Append(data []byte) (written int, err error)
 	// get the transformer of this appender
@@ -21,16 +19,11 @@ type Appender interface {
 
 // Used for impl Appender Transformer/Name... methods
 type AppenderMixin struct {
-	name        string
 	transformer atomic.Value //*Transformer
 }
 
-func NewAppenderMixin(name string) *AppenderMixin {
-	return &AppenderMixin{name: name}
-}
-
-func (am *AppenderMixin) Name() string {
-	return am.name
+func NewAppenderMixin() *AppenderMixin {
+	return &AppenderMixin{}
 }
 
 func (am *AppenderMixin) Transformer() Transformer {
@@ -55,20 +48,20 @@ func (ca *ConsoleAppender) Append(data []byte) (written int, err error) {
 	return ca.file.Write(data)
 }
 
-var defaultAppender = NewConsoleAppender("default")
+var defaultAppender = NewConsoleAppender()
 // The default appender all logger use
 func DefaultAppender() Appender {
 	return defaultAppender
 }
 
 // create console appender, which write log to stdout
-func NewConsoleAppender(name string) Appender {
-	return &ConsoleAppender{file: os.Stdout, AppenderMixin: NewAppenderMixin(name)}
+func NewConsoleAppender() Appender {
+	return &ConsoleAppender{file: os.Stdout, AppenderMixin: NewAppenderMixin()}
 }
 
 // create console appender, which write log to stderr
-func NewConsole2Appender(name string) Appender {
-	return &ConsoleAppender{file: os.Stderr, AppenderMixin: NewAppenderMixin(name)}
+func NewConsole2Appender() Appender {
+	return &ConsoleAppender{file: os.Stderr, AppenderMixin: NewAppenderMixin()}
 }
 
 // appender discard all logs
@@ -77,8 +70,8 @@ type NopAppender struct {
 }
 
 // create nop appender
-func NewNopAppender(name string) Appender {
-	return &NopAppender{AppenderMixin: NewAppenderMixin(name)}
+func NewNopAppender() Appender {
+	return &NopAppender{AppenderMixin: NewAppenderMixin()}
 }
 
 func (NopAppender) Append(data []byte) (written int, err error) {
@@ -91,8 +84,8 @@ type BytesAppender struct {
 	buffer bytes.Buffer
 }
 
-func NewBytesAppender(name string) Appender {
-	return &BytesAppender{AppenderMixin: NewAppenderMixin(name)}
+func NewBytesAppender() Appender {
+	return &BytesAppender{AppenderMixin: NewAppenderMixin()}
 }
 
 func (b *BytesAppender) Append(data []byte) (written int, err error) {

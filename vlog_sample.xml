@@ -1,0 +1,25 @@
+<vlog>
+    <transformers>
+        <transformer name="default" type="PatternTransformer">
+            <pattern>{time} [{level}] {logger} - {message}\n</pattern>
+        </transformer>
+    </transformers>
+    <appenders>
+        <appender name="console" type="ConsoleAppender" transformer-ref="default">
+        </appender>
+        <appender name="file" type="FileAppender" transformer-ref="default">
+            <path>logs/my.log</path>
+            <rotater type="DailyRotater" pattern="20060102"/>
+        </appender>
+    </appenders>
+    <logger name="github.com/user1" level="debug">
+        <appender-ref name="console"/>
+        <appender-ref name="file"/>
+    </logger>
+    <logger name="gopkg.in/package1" level="info">
+        <appender-ref name="console"/>
+    </logger>
+    <logger name="" level="warn">
+        <appender-ref name="console"/>
+    </logger>
+</vlog>

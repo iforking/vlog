@@ -3,6 +3,7 @@ package vlog
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
+	"os"
 )
 
 func TestLoad(t *testing.T) {
@@ -39,35 +40,16 @@ func TestLoggerCache_Filter(t *testing.T) {
 }
 
 func TestCache_SetPrefix(t *testing.T) {
-	logCache := newDefaultLogCache()
+	defer os.RemoveAll("logs/")
+	defer os.Unsetenv("VLOG_CONFIG_FILE")
+	defer UnlockLogger()
+	os.Setenv("VLOG_CONFIG_FILE", "vlog_sample.xml")
+	logCache := initLogCache()
 	logger1 := logCache.Load("package1")
 	logger2 := logCache.Load("gopkg.in/package1")
 	logger3 := logCache.Load("github.com/user1/package1")
 
-	logCache.SetPrefixLevel("", DEBUG)
-	assert.Equal(t, DEBUG, logger1.Level())
-	assert.Equal(t, DEBUG, logger2.Level())
-	assert.Equal(t, DEBUG, logger3.Level())
-
-	logCache.SetPrefixLevel("github.com", WARN)
-	appender := NewConsole2Appender("")
-	logCache.SetPrefixAppenders("github.com", []Appender{appender})
-	assert.Equal(t, DEBUG, logger1.Level())
-	assert.Equal(t, WARN, logger3.Level())
-	assert.NotEqual(t, []Appender{appender}, logger1.Appenders())
-	assert.Equal(t, []Appender{appender}, logger3.Appenders())
-	logger4 := logCache.Load("github.com/user1/package2")
-	assert.Equal(t, WARN, logger4.Level())
-	assert.Equal(t, []Appender{appender}, logger4.Appenders())
-
-	logCache.SetPrefixAppenders("", []Appender{appender})
-	appender2 := NewConsoleAppender("")
-	logCache.AddPrefixAppender("gopkg.in/", appender2)
-	assert.Equal(t, []Appender{appender}, logger1.Appenders())
-	assert.Equal(t, []Appender{appender, appender2}, logger2.Appenders())
-	assert.Equal(t, []Appender{appender}, logger3.Appenders())
-	logger5 := logCache.Load("gopkg.in/package2")
-	logger6 := logCache.Load("github.com/user2/package2")
-	assert.Equal(t, []Appender{appender, appender2}, logger5.Appenders())
-	assert.Equal(t, []Appender{appender}, logger6.Appenders())
+	assert.Equal(t, WARN.Name(), logger1.Level().Name())
+	assert.Equal(t, INFO.Name(), logger2.Level().Name())
+	assert.Equal(t, DEBUG.Name(), logger3.Level().Name())
 }

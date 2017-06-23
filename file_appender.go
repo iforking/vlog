@@ -10,6 +10,7 @@ import (
 	"unsafe"
 	"fmt"
 	"strconv"
+	"errors"
 )
 
 // Appender that write log to local file
@@ -24,7 +25,15 @@ type FileAppender struct {
 // create new file appender.
 // path is the base path and filename of log file.
 // appender can be nil, then the file would not be rotated.
-func NewFileAppender(name string, path string, rotater Rotater) (Appender, error) {
+func NewFileAppender(path string, rotater Rotater) (Appender, error) {
+	if len(path) == 0 {
+		return nil, errors.New("file path for FIleAppender is empty")
+	}
+	dir := filepath.Dir(path)
+	err := os.MkdirAll(dir, 0777)
+	if err != nil {
+		return nil, err
+	}
 	file, err := openFile(path)
 	if err != nil {
 		return nil, err
@@ -42,7 +51,7 @@ func NewFileAppender(name string, path string, rotater Rotater) (Appender, error
 		path:          path,
 		file:          unsafe.Pointer(file),
 		rotater:       rotater,
-		AppenderMixin: NewAppenderMixin(name),
+		AppenderMixin: NewAppenderMixin(),
 	}, nil
 }
 
@@ -162,13 +171,13 @@ func NewTimeRotater(duration time.Duration, suffixFormat string) Rotater {
 }
 
 // create rotater rotate log every hour
-func NewHourRotater() Rotater {
-	return NewTimeRotater(time.Hour, "2006-01-02-15")
+func NewHourRotater(pattern string) Rotater {
+	return NewTimeRotater(time.Hour, pattern)
 }
 
 // create rotater rotate log every day
-func NewDayRotater() Rotater {
-	return NewTimeRotater(time.Hour*24, "2006-01-02")
+func NewDayRotater(pattern string) Rotater {
+	return NewTimeRotater(time.Hour*24, pattern)
 }
 
 func (t *TimeRotater) lastTime() *time.Time {
@@ -210,8 +219,8 @@ type SizeRotater struct {
 }
 
 // create file size rotater, rotate log file when file size larger than rotateSize, in bytes
-func NewSizeRotater(rotateSize int64) Rotater {
-	return &SizeRotater{rotateSize: rotateSize, SuffixWidth: 5}
+func NewSizeRotater(rotateSize int64, suffixWidth int) Rotater {
+	return &SizeRotater{rotateSize: rotateSize, SuffixWidth: suffixWidth}
 }
 
 func (sr *SizeRotater) setInitStatus(lastModify time.Time, size int64, suffixes []string) {

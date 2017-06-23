@@ -34,6 +34,7 @@ func DefaultTransformer() Transformer {
 
 // Transform one log record using pattern, to string
 type PatternTransformer struct {
+	pattern string
 	types   []uint32
 	helpers []string
 }
@@ -47,7 +48,7 @@ type PatternTransformer struct {
 // {logger} the logger name
 // {message} the log message
 // use {{ to escape  {, use }} to escape }
-func NewPatternFormatter(formatter string) (Transformer, error) {
+func NewPatternFormatter(pattern string) (Transformer, error) {
 	type State int
 	const (
 		NORMAL      = 0
@@ -61,7 +62,7 @@ func NewPatternFormatter(formatter string) (Transformer, error) {
 	buffer := []rune{}
 	types := []uint32{}
 	helpers := []string{}
-	for idx, r := range []rune(formatter) {
+	for idx, r := range []rune(pattern) {
 		switch state {
 		case NORMAL:
 			if r == '{' {
@@ -142,7 +143,7 @@ func NewPatternFormatter(formatter string) (Transformer, error) {
 	helpers = append(helpers, string(buffer))
 	types = append(types, uint32((STRING<<16)|idx))
 
-	return &PatternTransformer{types: types, helpers: helpers}, nil
+	return &PatternTransformer{pattern: pattern, types: types, helpers: helpers}, nil
 }
 
 // return formatter with default format

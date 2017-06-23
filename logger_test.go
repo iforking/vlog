@@ -12,13 +12,13 @@ func TestLogger(t *testing.T) {
 	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
 	assert.Equal(t, DEFAULT_LEVEL, logger.level.Load().(Level))
 
-	appender := NewBytesAppender("bytes")
+	appender := NewBytesAppender()
 	logger.SetAppenders([]Appender{appender})
 	logger.Info("this is a test")
 	assert.True(t, strings.HasSuffix(appender.(*BytesAppender).buffer.String(),
 		" [INFO] github.com/clearthesky/vlog - this is a test\n"))
 
-	appender = NewBytesAppender("bytes2")
+	appender = NewBytesAppender()
 	transformer, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
 	appender.SetTransformer(transformer)
 	logger.SetAppenders([]Appender{appender})
@@ -53,7 +53,7 @@ func TestLoggerJudge(t *testing.T) {
 func TestLogger_AddAppender(t *testing.T) {
 	logger := CurrentPackageLogger()
 	assert.Equal(t, 1, len(logger.Appenders()))
-	appender := NewConsole2Appender("stderr")
+	appender := NewConsole2Appender()
 	logger.AddAppender(appender)
 	assert.Equal(t, 2, len(logger.Appenders()))
 	assert.Equal(t, appender, logger.Appenders()[1])

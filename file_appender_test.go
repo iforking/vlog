@@ -8,7 +8,7 @@ import (
 )
 
 func TestFileAppender_Write(t *testing.T) {
-	appender, err := NewFileAppender("file", "test_file.log", nil)
+	appender, err := NewFileAppender("test_file.log", nil)
 	assert.NoError(t, err)
 	defer os.Remove("test_file.log")
 
@@ -16,7 +16,7 @@ func TestFileAppender_Write(t *testing.T) {
 }
 
 func TestFileAppender_Write2(t *testing.T) {
-	appender, err := NewFileAppender("file", "multi/path/test_file.log", nil)
+	appender, err := NewFileAppender("multi/path/test_file.log", nil)
 	defer os.RemoveAll("multi/")
 	assert.NoError(t, err)
 
@@ -41,7 +41,7 @@ func TestGetLogSuffixes(t *testing.T) {
 
 func TestLogRotate(t *testing.T) {
 	defer os.RemoveAll("logs/")
-	a, err := NewFileAppender("file", "logs/test_file.log", nil)
+	a, err := NewFileAppender("logs/test_file.log", nil)
 	a.Append([]byte("first log\n"))
 	assert.NoError(t, err)
 	appender := a.(*FileAppender)
@@ -56,7 +56,7 @@ func TestLogRotate(t *testing.T) {
 }
 
 func TestTimeRotater(t *testing.T) {
-	r := NewHourRotater()
+	r := NewHourRotater("2006-01-02-15")
 	ts, _ := time.Parse("2006-01-02 15:04:05", "2017-05-06 11:12:13")
 	r.setInitStatus(ts, 0, []string{})
 
@@ -78,7 +78,7 @@ func TestTimeRotater(t *testing.T) {
 }
 
 func TestSizeRotater(t *testing.T) {
-	rotater := NewSizeRotater(1024 * 1024)
+	rotater := NewSizeRotater(1024 * 1024, 5)
 	rotater.setInitStatus(time.Now(), 1024*1023, []string{"xxxx", "123", "0014", "012"})
 
 	b, s := rotater.Check(time.Now(), 1023, 1)
