@@ -52,12 +52,12 @@ type TransformerElement struct {
 func LoadXmlConfig(path string) (*RootElement, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, wrapError("load log config file failed", err)
 	}
 	var root RootElement
 	err = xml.Unmarshal(data, &root)
 	if err != nil {
-		return nil, err
+		return nil, wrapError("unmarshal log config file failed", err)
 	}
 	return &root, nil
 }
@@ -77,11 +77,11 @@ func (pb *PatternTransformerBuilder) Build(xmlData []byte) (Transformer, error) 
 	}
 	err := xml.Unmarshal(xmlData, &p)
 	if err != nil {
-		return nil, err
+		return nil, wrapError("unmarshal PatternTransformer config failed", err)
 	}
 	pattern, err := strconv.Unquote("\"" + strings.Replace(p.Pattern, "\"", "__double_quote__", -1) + "\"")
 	if err != nil {
-		return nil, err
+		return nil, wrapError("unquote PatternTransformer pattern string failed", err)
 	}
 	pattern = strings.Replace(pattern, "__double_quote__", "\"", -1)
 	return NewPatternFormatter(pattern)
@@ -117,7 +117,7 @@ func (fb *FileAppenderBuilder) Build(xmlData []byte) (Appender, error) {
 	}{}
 	err := xml.Unmarshal(xmlData, setting)
 	if err != nil {
-		return nil, err
+		return nil, wrapError("unmarshal FileAppender config failed", err)
 	}
 
 	if setting.Path == "" {

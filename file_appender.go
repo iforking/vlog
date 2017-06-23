@@ -29,20 +29,15 @@ func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 	if len(path) == 0 {
 		return nil, errors.New("file path for FIleAppender is empty")
 	}
-	dir := filepath.Dir(path)
-	err := os.MkdirAll(dir, 0777)
-	if err != nil {
-		return nil, err
-	}
 	file, err := openFile(path)
 	if err != nil {
-		return nil, err
+		return nil, wrapError("open file log failed", err)
 	}
 
 	if rotater != nil {
 		fileInfo, err := file.Stat()
 		if err != nil {
-			return nil, err
+			return nil, wrapError("get log file stat error", err)
 		}
 		suffixes := getLogSuffixed(path)
 		rotater.setInitStatus(fileInfo.ModTime(), fileInfo.Size(), suffixes)
@@ -86,11 +81,11 @@ func (f *FileAppender) rotateFile(renamePath string) error {
 	// would os.Rename work in windows when file is open? on windows should use FileShare.Delete when open file
 	err := os.Rename(f.path, renamePath)
 	if err != nil {
-		return err
+		return wrapError("rotate-rename log file error", err)
 	}
 	file, err := openFile(f.path)
 	if err != nil {
-		return err
+		return wrapError("rotate-open new log file error", err)
 	}
 	oldFile := f.currentFile()
 	if f.swapFile(oldFile, file) {
@@ -103,7 +98,7 @@ func (f *FileAppender) rotateFile(renamePath string) error {
 
 func openFile(path string) (*os.File, error) {
 	if err := ensureParentPath(path); err != nil {
-		return nil, err
+		return nil, wrapError("make file log parent dir failed", err)
 	}
 	return os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 }

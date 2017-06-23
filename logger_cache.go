@@ -55,7 +55,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		}
 		transformer, err := builder.Build([]byte("<root>" + string(e.InnerXML) + "</root>"))
 		if err != nil {
-			return nil, err
+			return nil, wrapError("build transformer from config error", err)
 		}
 		transformerMap[e.Name] = transformer
 	}
@@ -77,7 +77,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		}
 		appender, err := builder.Build([]byte("<root>" + string(e.InnerXML) + "</root>"))
 		if err != nil {
-			return nil, err
+			return nil, wrapError("build appender from config error", err)
 		}
 		if e.TransformerName == "" {
 			return nil, errors.New("appender " + e.Name + " transformer not set")
