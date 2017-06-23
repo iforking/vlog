@@ -84,6 +84,11 @@ func (lc *LoggerCache) filter(prefix string) []*Logger {
 }
 
 func (lc *LoggerCache) SetPrefixLevel(prefix string, level Level) {
+	if LoggerLocked() {
+		return
+	}
+	lc.lock.Lock()
+	defer lc.lock.Unlock()
 	for _, logger := range lc.filter(prefix) {
 		logger.SetLevel(level)
 	}
@@ -91,6 +96,9 @@ func (lc *LoggerCache) SetPrefixLevel(prefix string, level Level) {
 }
 
 func (lc *LoggerCache) SetPrefixAppenders(prefix string, appenders []Appender) {
+	if LoggerLocked() {
+		return
+	}
 	lc.lock.Lock()
 	defer lc.lock.Unlock()
 	for _, logger := range lc.filter(prefix) {
@@ -100,6 +108,9 @@ func (lc *LoggerCache) SetPrefixAppenders(prefix string, appenders []Appender) {
 }
 
 func (lc *LoggerCache) AddPrefixAppender(prefix string, appender Appender) {
+	if LoggerLocked() {
+		return
+	}
 	lc.lock.Lock()
 	defer lc.lock.Unlock()
 	for _, logger := range lc.filter(prefix) {

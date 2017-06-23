@@ -5,6 +5,23 @@ import (
 	"unsafe"
 )
 
+var loggerLocked int32 = 0
+
+// unlock logger, so later modifications to loggers will take effect
+func UnlockLogger() {
+	atomic.StoreInt32(&loggerLocked, 0)
+}
+
+// lock logger, so all modifications to loggers will not take effect
+func LockLogger() {
+	atomic.StoreInt32(&loggerLocked, 1)
+}
+
+// if return true, all modifications to loggers will not take effect
+func LoggerLocked() bool {
+	return atomic.LoadInt32(&loggerLocked) == 1
+}
+
 type Level uint32
 
 var levelNames = map[Level]string{
@@ -45,6 +62,9 @@ func (l *Logger) Name() string {
 
 // set new Level to this logger. the default log level is DEBUG
 func (l *Logger) SetLevel(level Level) {
+	if LoggerLocked() {
+		return
+	}
 	l.level.Store(level)
 }
 
@@ -56,6 +76,9 @@ func (l *Logger) Level() Level {
 
 // Set appender for this logger
 func (l *Logger) SetAppenders(appender []Appender) {
+	if LoggerLocked() {
+		return
+	}
 	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appender))
 }
 
@@ -66,6 +89,9 @@ func (l *Logger) Appenders() []Appender {
 
 // Add one new appender to logger
 func (l *Logger) AddAppender(appender Appender) {
+	if LoggerLocked() {
+		return
+	}
 	for {
 		p := atomic.LoadPointer(&l.appenders)
 		appenders := *(*[]Appender)(p)
