@@ -151,22 +151,13 @@ func (l *Logger) log(level Level, message string, args ...interface{}) {
 	}
 }
 
-func createLogger(name string) *Logger {
-	logger := &Logger{
-		name: name,
-	}
-	logger.SetLevel(DEFAULT_LEVEL)
-	logger.SetAppenders([]Appender{DefaultAppender()})
-	return logger
-}
-
 // create new logger, with name and
-func NewLogger(name string) *Logger {
-	return logCache.load(name)
+func GetLogger(name string) *Logger {
+	return logCache.Load(name)
 }
 
 // return the log of current package, use package name as logger name
 func CurrentPackageLogger() *Logger {
 	caller := getCaller(2)
-	return NewLogger(caller.packageName)
+	return GetLogger(caller.packageName)
 }
