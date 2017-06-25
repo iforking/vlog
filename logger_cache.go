@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"errors"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -53,7 +52,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		if !ok {
 			return nil, errors.New("unknown transformer type:" + e.Type)
 		}
-		transformer, err := builder.Build([]byte("<root>" + string(e.InnerXML) + "</root>"))
+		transformer, err := builder.Build(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
 		if err != nil {
 			return nil, wrapError("build transformer from config error", err)
 		}
@@ -75,7 +74,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		if !ok {
 			return nil, errors.New("unknown appender type: " + e.Type)
 		}
-		appender, err := builder.Build([]byte("<root>" + string(e.InnerXML) + "</root>"))
+		appender, err := builder.Build(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
 		if err != nil {
 			return nil, wrapError("build appender from config error", err)
 		}
@@ -156,13 +155,11 @@ func (lc *LoggerCache) Load(name string) *Logger {
 	}
 
 	logConfig := lc.matchConfig(name)
-	levelValue := &atomic.Value{}
-	levelValue.Store(logConfig.level)
 
 	appenders := &logConfig.appenders
 	logger = &Logger{
 		name:      name,
-		level:     levelValue,
+		level:     int32(logConfig.level),
 		appenders: unsafe.Pointer(appenders),
 	}
 	lc.loggerMap[name] = logger

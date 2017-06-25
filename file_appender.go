@@ -15,7 +15,7 @@ import (
 
 // Appender that write log to local file
 type FileAppender struct {
-	*AppenderMixin
+	*CanFormattedMixin
 	path    string
 	file    unsafe.Pointer //*os.File, current opened file
 	rotater Rotater
@@ -43,10 +43,10 @@ func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 		rotater.setInitStatus(fileInfo.ModTime(), fileInfo.Size(), suffixes)
 	}
 	return &FileAppender{
-		path:          path,
-		file:          unsafe.Pointer(file),
-		rotater:       rotater,
-		AppenderMixin: NewAppenderMixin(),
+		path:              path,
+		file:              unsafe.Pointer(file),
+		rotater:           rotater,
+		CanFormattedMixin: NewAppenderMixin(),
 	}, nil
 }
 
@@ -78,7 +78,6 @@ func (f *FileAppender) swapFile(oldFile *os.File, file *os.File) bool {
 
 func (f *FileAppender) rotateFile(renamePath string) error {
 	// should follow rename -> open new -> replace current -> close old steps.
-	// would os.Rename work in windows when file is open? on windows should use FileShare.Delete when open file
 	err := os.Rename(f.path, renamePath)
 	if err != nil {
 		return wrapError("rotate-rename log file error", err)
@@ -92,23 +91,6 @@ func (f *FileAppender) rotateFile(renamePath string) error {
 		oldFile.Close()
 	} else {
 		//should not happen if appender act rightly ?
-	}
-	return nil
-}
-
-func openFile(path string) (*os.File, error) {
-	if err := ensureParentPath(path); err != nil {
-		return nil, wrapError("make file log parent dir failed", err)
-	}
-	return os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-}
-
-func ensureParentPath(path string) error {
-	dir, _ := filepath.Split(path)
-	if len(dir) > 0 {
-		if err := os.MkdirAll(dir, 0777); err != nil {
-			return err
-		}
 	}
 	return nil
 }

@@ -170,7 +170,7 @@ func (f *PatternTransformer) Transform(logger string, level Level, message strin
 		case TIME:
 			var timeFormat string
 			if idx == 0 {
-				timeFormat = "2006-01-02 15:04:05.999"
+				timeFormat = "2006-01-02 15:04:05.000"
 			} else {
 				timeFormat = f.helpers[idx]
 			}

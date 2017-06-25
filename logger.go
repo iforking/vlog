@@ -22,7 +22,7 @@ func LoggerLocked() bool {
 	return atomic.LoadInt32(&loggerLocked) == 1
 }
 
-type Level uint32
+type Level int32
 
 var levelNames = map[Level]string{
 	TRACE:    "TRACE",
@@ -60,7 +60,7 @@ const (
 
 type Logger struct {
 	name      string
-	level     *atomic.Value  //Level
+	level     int32          //Level
 	appenders unsafe.Pointer //*[]Appender
 }
 
@@ -74,13 +74,12 @@ func (l *Logger) SetLevel(level Level) {
 	if LoggerLocked() {
 		return
 	}
-	l.level.Store(level)
+	atomic.StoreInt32(&l.level, int32(level))
 }
 
 // current level of this logger
 func (l *Logger) Level() Level {
-	iface := l.level.Load()
-	return iface.(Level)
+	return Level(atomic.LoadInt32(&l.level))
 }
 
 // Set appender for this logger

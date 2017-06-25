@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 )
 
-// Appender write the log to one destination.
-// Appender Should  be reused across loggers.
+// Appender write the log to one destination, and can provider a transformer to convert the log message to desired data.
+// Appender Should be reused across loggers.
 type Appender interface {
 	// append new data
 	Append(data []byte) (written int, err error)
@@ -18,15 +18,15 @@ type Appender interface {
 }
 
 // Used for impl Appender Transformer/Name... methods
-type AppenderMixin struct {
+type CanFormattedMixin struct {
 	transformer atomic.Value //*Transformer
 }
 
-func NewAppenderMixin() *AppenderMixin {
-	return &AppenderMixin{}
+func NewAppenderMixin() *CanFormattedMixin {
+	return &CanFormattedMixin{}
 }
 
-func (am *AppenderMixin) Transformer() Transformer {
+func (am *CanFormattedMixin) Transformer() Transformer {
 	iface := am.transformer.Load()
 	if iface == nil {
 		return DefaultTransformer()
@@ -34,13 +34,13 @@ func (am *AppenderMixin) Transformer() Transformer {
 	return *iface.(*Transformer)
 }
 
-func (am *AppenderMixin) SetTransformer(transformer Transformer) {
+func (am *CanFormattedMixin) SetTransformer(transformer Transformer) {
 	am.transformer.Store(&transformer)
 }
 
 // appender write log to stdout
 type ConsoleAppender struct {
-	*AppenderMixin
+	*CanFormattedMixin
 	file *os.File
 }
 
@@ -56,22 +56,22 @@ func DefaultAppender() Appender {
 
 // create console appender, which write log to stdout
 func NewConsoleAppender() Appender {
-	return &ConsoleAppender{file: os.Stdout, AppenderMixin: NewAppenderMixin()}
+	return &ConsoleAppender{file: os.Stdout, CanFormattedMixin: NewAppenderMixin()}
 }
 
 // create console appender, which write log to stderr
 func NewConsole2Appender() Appender {
-	return &ConsoleAppender{file: os.Stderr, AppenderMixin: NewAppenderMixin()}
+	return &ConsoleAppender{file: os.Stderr, CanFormattedMixin: NewAppenderMixin()}
 }
 
 // appender discard all logs
 type NopAppender struct {
-	*AppenderMixin
+	*CanFormattedMixin
 }
 
 // create nop appender
 func NewNopAppender() Appender {
-	return &NopAppender{AppenderMixin: NewAppenderMixin()}
+	return &NopAppender{CanFormattedMixin: NewAppenderMixin()}
 }
 
 func (NopAppender) Append(data []byte) (written int, err error) {
@@ -80,12 +80,12 @@ func (NopAppender) Append(data []byte) (written int, err error) {
 
 // appender write log into memory
 type BytesAppender struct {
-	*AppenderMixin
+	*CanFormattedMixin
 	buffer bytes.Buffer
 }
 
 func NewBytesAppender() Appender {
-	return &BytesAppender{AppenderMixin: NewAppenderMixin()}
+	return &BytesAppender{CanFormattedMixin: NewAppenderMixin()}
 }
 
 func (b *BytesAppender) Append(data []byte) (written int, err error) {

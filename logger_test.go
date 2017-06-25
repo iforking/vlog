@@ -10,7 +10,7 @@ import (
 func TestLogger(t *testing.T) {
 	logger := CurrentPackageLogger()
 	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
-	assert.Equal(t, DEFAULT_LEVEL, logger.level.Load().(Level))
+	assert.Equal(t, DEFAULT_LEVEL, logger.Level())
 
 	appender := NewBytesAppender()
 	logger.SetAppenders([]Appender{appender})
