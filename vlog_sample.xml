@@ -11,6 +11,10 @@
             <path>logs/my.log</path>
             <rotater type="DailyRotater" pattern="20060102"/>
         </appender>
+        <appender name="file2" type="FileAppender" transformer-ref="default">
+            <path>logs/my.log</path>
+            <rotater type="SizeRotater" pattern="800m"/>
+        </appender>
     </appenders>
     <logger name="github.com/user1" level="debug">
         <appender-ref name="console"/>

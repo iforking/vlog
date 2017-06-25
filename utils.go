@@ -3,6 +3,9 @@ package vlog
 import (
 	"path/filepath"
 	"os"
+	"errors"
+	"strconv"
+	"unicode"
 )
 
 type wrappedError struct {
@@ -31,6 +34,31 @@ func concatBytes(items ...[]byte) []byte {
 		copied += len(item)
 	}
 	return result
+}
+
+func parseSize(sizeStr string) (int64, error) {
+	if sizeStr == "" {
+		return 0, errors.New("empty string can not convert to size")
+	}
+	lastChar := sizeStr[len(sizeStr)-1]
+	lastChar = byte(unicode.ToLower(rune(lastChar)))
+	if lastChar == 'k' || lastChar == 'm' || lastChar == 'g' || lastChar == 't' {
+		v, err := strconv.ParseFloat(sizeStr[:len(sizeStr)-1], 64)
+		if err != nil {
+			return 0, err
+		}
+		switch lastChar {
+		case 'k':
+			return int64(v * 1024), nil
+		case 'm':
+			return int64(v * 1024 * 1024), nil
+		case 'g':
+			return int64(v * 1024 * 1024 * 1024), nil
+		case 't':
+			return int64(v * 1024 * 1024 * 1024 * 1024), nil
+		}
+	}
+	return strconv.ParseInt(sizeStr, 10, 64)
 }
 
 // for files

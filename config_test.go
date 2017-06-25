@@ -15,6 +15,11 @@ func TestLoadXmlConfig(t *testing.T) {
 	assert.Equal(t, "ConsoleAppender", appenderElement.Type)
 	assert.Equal(t, "default", appenderElement.TransformerName)
 
+	appenderElement2 := root.AppenderElements.AppenderElements[2]
+	assert.Equal(t, "file2", appenderElement2.Name)
+	assert.Equal(t, "FileAppender", appenderElement2.Type)
+	assert.Equal(t, "default", appenderElement2.TransformerName)
+
 	transformerElement := root.TransformerElements.TransformerElements[0]
 	assert.Equal(t, "default", transformerElement.Name)
 	assert.Equal(t, "PatternTransformer", transformerElement.Type)

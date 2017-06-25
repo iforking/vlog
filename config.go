@@ -90,9 +90,9 @@ func buildFileAppender(xmlData []byte) (Appender, error) {
 		Path string `xml:"path"`
 		Rotater *struct {
 			Type        string `xml:"type,attr"`
-			Pattern     string `xml:"pattern,attr"`    // for time rotater
-			Size        int64 `xml:"rotate-size,attr"` // for size rotater
-			SuffixWidth int `xml:"suffix-width,attr"`  // for size rotater
+			Pattern     string `xml:"pattern,attr"`     // for time rotater
+			Size        string `xml:"rotate-size,attr"` // for size rotater
+			SuffixWidth int `xml:"suffix-width,attr"`   // for size rotater
 		} `xml:"rotater"`
 	}{}
 	err := xml.Unmarshal(xmlData, setting)
@@ -108,10 +108,14 @@ func buildFileAppender(xmlData []byte) (Appender, error) {
 	if rotaterSetting != nil {
 		rType := rotaterSetting.Type
 		if rType == "SizeRotater" {
-			if rotaterSetting.Size == 0 || rotaterSetting.SuffixWidth == 0 {
+			if len(rotaterSetting.Size) == 0 || rotaterSetting.SuffixWidth == 0 {
 				return nil, errors.New("should set rotate-size and suffix-width")
 			}
-			rotater = NewSizeRotater(rotaterSetting.Size, rotaterSetting.SuffixWidth)
+			rotateSize, err := parseSize(rotaterSetting.Size)
+			if err != nil {
+				return nil, wrapError("parse rotate size error", err)
+			}
+			rotater = NewSizeRotater(rotateSize, rotaterSetting.SuffixWidth)
 		} else if rType == "DailyRotater" {
 			rotater = NewDayRotater(rotaterSetting.Pattern)
 		} else if rType == "HourlyRotater" {
