@@ -10,13 +10,13 @@ import (
 func TestLogger(t *testing.T) {
 	logger := CurrentPackageLogger()
 	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
-	assert.Equal(t, DEFAULT_LEVEL, logger.Level())
+	assert.Equal(t, DefaultLevel, logger.Level())
 
 	appender := NewBytesAppender()
 	logger.SetAppenders([]Appender{appender})
 	logger.Info("this is a test")
 	assert.True(t, strings.HasSuffix(appender.(*BytesAppender).buffer.String(),
-		" [INFO] github.com/clearthesky/vlog - this is a test\n"))
+		" [Info] github.com/clearthesky/vlog - this is a test\n"))
 
 	appender = NewBytesAppender()
 	transformer, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
@@ -33,19 +33,19 @@ func TestLogger(t *testing.T) {
 
 func TestLoggerJudge(t *testing.T) {
 	logger := CurrentPackageLogger()
-	logger.SetLevel(OFF)
+	logger.SetLevel(Off)
 	assert.False(t, logger.IsTraceEnable())
 	assert.False(t, logger.IsErrorEnable())
 
-	logger.SetLevel(CRITICAL)
+	logger.SetLevel(Critical)
 	assert.True(t, logger.IsCriticalEnable())
 	assert.False(t, logger.IsErrorEnable())
 
-	logger.SetLevel(ERROR)
+	logger.SetLevel(Error)
 	assert.True(t, logger.IsErrorEnable())
 	assert.False(t, logger.IsInfoEnable())
 
-	logger.SetLevel(TRACE)
+	logger.SetLevel(Trace)
 	assert.True(t, logger.IsTraceEnable())
 	assert.True(t, logger.IsInfoEnable())
 }

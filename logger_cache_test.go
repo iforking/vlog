@@ -49,7 +49,7 @@ func TestCache_SetPrefix(t *testing.T) {
 	logger2 := logCache.Load("gopkg.in/package1")
 	logger3 := logCache.Load("github.com/user1/package1")
 
-	assert.Equal(t, WARN.Name(), logger1.Level().Name())
-	assert.Equal(t, INFO.Name(), logger2.Level().Name())
-	assert.Equal(t, DEBUG.Name(), logger3.Level().Name())
+	assert.Equal(t, Warn.Name(), logger1.Level().Name())
+	assert.Equal(t, Info.Name(), logger2.Level().Name())
+	assert.Equal(t, Debug.Name(), logger3.Level().Name())
 }

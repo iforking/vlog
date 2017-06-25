@@ -84,6 +84,7 @@ func (f *FileAppender) rotateFile(renamePath string) error {
 	}
 	file, err := openFile(f.path)
 	if err != nil {
+		_ = os.Rename(renamePath, f.path)
 		return wrapError("rotate-open new log file error", err)
 	}
 	oldFile := f.currentFile()
@@ -91,6 +92,8 @@ func (f *FileAppender) rotateFile(renamePath string) error {
 		oldFile.Close()
 	} else {
 		//should not happen if appender act rightly ?
+		file.Close()
+		_ = os.Rename(renamePath, f.path)
 	}
 	return nil
 }
@@ -102,7 +105,7 @@ func getLogSuffixed(path string) []string {
 	files, _ := ioutil.ReadDir(dir)
 
 	var suffixes []string
-	for _, f := range files { // ignore error
+	for _, f := range files {
 		logFileName := f.Name()
 		if !strings.HasPrefix(logFileName, baseName) {
 			continue

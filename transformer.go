@@ -8,22 +8,10 @@ import (
 	"time"
 )
 
-const (
-	STRING   = 0
-	PACKAGE  = 1
-	FILE     = 2
-	FUNCTION = 3
-	LINE     = 4
-	LEVEL    = 10
-	LOGGER   = 11
-	TIME     = 20
-	MESSAGE  = 21
-)
-
 // Transformer convert one log record to byte array data.
 // Transformer should can be share across goroutines, and user Should always reuse transformers.
 type Transformer interface {
-	Transform(logger string, level Level, message string, args []interface{}) []byte
+	Transform(logger string, level Level, now time.Time, message string, args []interface{}) []byte
 }
 
 var defaultTransformer = NewDefaultPatternTransformer()
@@ -35,120 +23,147 @@ func DefaultTransformer() Transformer {
 // Transform one log record using pattern, to string
 type PatternTransformer struct {
 	pattern string
-	types   []uint32
-	helpers []string
+	items   []patternItem
 }
 
-// below vars can be used in format string:
+type kind int32
+
+const (
+	text             kind = 0
+	goPackage        kind = 1
+	goFile           kind = 2
+	goFunction       kind = 3
+	lineNum          kind = 4
+	loggerName       kind = 10
+	loggerLevel      kind = 11
+	loggerLevelUpper kind = 12
+	loggerLevelLower kind = 13
+	timestamp        kind = 20
+	logMessage       kind = 21
+)
+
+type patternItem struct {
+	kind   kind   // item type
+	str    string // for text item, hold the content of text
+	filter string // the filter
+}
+
+// below variables can be used in format string:
 // {file} filename
 // {package} package name
 // {line} line number
 // {function} function name
 // {time} time
 // {logger} the logger name
+// {Level}/{level}/{LEVEL} the logger level, with different character case
 // {message} the log message
 // use {{ to escape  {, use }} to escape }
+// {time} can set custom format via filter, by {time|2006-01-02 15:04:05.000}
 func NewPatternFormatter(pattern string) (Transformer, error) {
 	type State int
 	const (
-		NORMAL      = 0
-		LEFT_FIRST  = 1
-		V_NAME      = 2
-		RIGHT_FIRST = 3
-		FILTER      = 4
+		normalState      State = 0
+		leftFirst        State = 1
+		inVariableName   State = 2
+		rightFirst       State = 3
+		inVariableFilter State = 4
 	)
 
-	state := NORMAL
+	state := normalState
 	buffer := []rune{}
-	types := []uint32{}
-	helpers := []string{}
+	items := []patternItem{}
 	for idx, r := range []rune(pattern) {
 		switch state {
-		case NORMAL:
+		case normalState:
 			if r == '{' {
-				state = LEFT_FIRST
+				state = leftFirst
 			} else if r == '}' {
-				state = RIGHT_FIRST
+				state = rightFirst
 			} else {
 				buffer = append(buffer, r)
 			}
-		case LEFT_FIRST:
+		case leftFirst:
 			if r == '{' {
 				buffer = append(buffer, '{')
-				state = NORMAL
+				state = normalState
 			} else {
-				idx := len(helpers)
-				helpers = append(helpers, string(buffer))
-				types = append(types, uint32((STRING<<16)|idx))
+				if str := string(buffer); len(str) > 0 {
+					items = append(items, patternItem{kind: text, str: str})
+				}
 				buffer = buffer[:0]
 				buffer = append(buffer, r)
-				state = V_NAME
+				state = inVariableName
 			}
-		case V_NAME:
+		case inVariableName:
 			if r == '}' || r == '|' {
 				name := string(buffer)
 				buffer = buffer[:0]
 				if name == "file" {
-					types = append(types, FILE<<16)
+					items = append(items, patternItem{kind: goFile})
 				} else if name == "package" {
-					types = append(types, PACKAGE<<16)
+					items = append(items, patternItem{kind: goPackage})
 				} else if name == "function" {
-					types = append(types, FUNCTION<<16)
+					items = append(items, patternItem{kind: goFunction})
 				} else if name == "line" {
-					types = append(types, LINE<<16)
+					items = append(items, patternItem{kind: lineNum})
 				} else if name == "time" {
-					types = append(types, TIME<<16)
+					items = append(items, patternItem{kind: timestamp})
 				} else if name == "logger" {
-					types = append(types, LOGGER<<16)
+					items = append(items, patternItem{kind: loggerName})
 				} else if name == "message" {
-					types = append(types, MESSAGE<<16)
+					items = append(items, patternItem{kind: logMessage})
+				} else if name == "Level" {
+					items = append(items, patternItem{kind: loggerLevel})
 				} else if name == "level" {
-					types = append(types, LEVEL<<16)
+					items = append(items, patternItem{kind: loggerLevelLower})
+				} else if name == "LEVEL" {
+					items = append(items, patternItem{kind: loggerLevelUpper})
 				} else {
-					return nil, errors.New("unknown name: " + name)
+					return nil, errors.New("unknown variable name: " + name)
 				}
 				if r == '}' {
-					state = NORMAL
+					state = normalState
 				} else if r == '|' {
-					state = FILTER
+					state = inVariableFilter
 				}
 			} else {
 				buffer = append(buffer, r)
 			}
-		case RIGHT_FIRST:
+		case rightFirst:
 			if r == '}' {
 				buffer = append(buffer, '}')
-				state = NORMAL
+				state = normalState
 			} else {
 				return nil, errors.New("unexpected } at " + strconv.Itoa(idx-1))
 			}
-		case FILTER:
+		case inVariableFilter:
 			if r == '}' {
-				idx := len(helpers)
-				helpers = append(helpers, string(buffer))
+				if str := string(buffer); len(str) > 0 {
+					(&items[len(items)-1]).filter = str
+				}
 				buffer = buffer[:0]
-				types[len(types)-1] |= uint32(idx)
-				state = NORMAL
+				state = normalState
 			} else {
 				buffer = append(buffer, r)
 			}
 		default:
-			return nil, errors.New("unhandled state: " + strconv.Itoa(state))
+			return nil, errors.New("unhandled state: " + strconv.Itoa(int(state)))
 		}
 	}
-	if state != NORMAL {
+	if state != normalState {
 		return nil, errors.New("format str does not finish rightly")
 	}
-	idx := len(helpers)
-	helpers = append(helpers, string(buffer))
-	types = append(types, uint32((STRING<<16)|idx))
+	// the last part
+	if str := string(buffer); len(str) > 0 {
+		items = append(items, patternItem{kind: text, str: str})
+	}
 
-	return &PatternTransformer{pattern: pattern, types: types, helpers: helpers}, nil
+	return &PatternTransformer{pattern: pattern, items: items}, nil
 }
 
 // return formatter with default format
 func NewDefaultPatternTransformer() Transformer {
-	formatter, err := NewPatternFormatter("{time} [{level}] {logger} - {message}\n")
+	formatter, err := NewPatternFormatter("{time} [{Level}] {logger} - {message}\n")
 	if err != nil {
 		panic(err)
 	}
@@ -156,54 +171,57 @@ func NewDefaultPatternTransformer() Transformer {
 }
 
 // format log data to byte array data
-func (f *PatternTransformer) Transform(logger string, level Level, message string, args []interface{}) []byte {
+func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string,
+	args []interface{}) []byte {
 
 	logItems := []string{}
 	var caller *caller
 	depth := 4
-	for _, t := range f.types {
-		t1 := t >> 16
-		idx := t & 0xffff
-		switch t1 {
-		case STRING:
-			logItems = append(logItems, f.helpers[idx])
-		case TIME:
+	for _, item := range f.items {
+		switch item.kind {
+		case text:
+			logItems = append(logItems, item.str)
+		case timestamp:
 			var timeFormat string
-			if idx == 0 {
+			if item.filter == "" {
 				timeFormat = "2006-01-02 15:04:05.000"
 			} else {
-				timeFormat = f.helpers[idx]
+				timeFormat = item.filter
 			}
-			logItems = append(logItems, time.Now().Format(timeFormat))
-		case LOGGER:
+			logItems = append(logItems, now.Format(timeFormat))
+		case loggerName:
 			logItems = append(logItems, logger)
-		case LEVEL:
+		case loggerLevel:
 			logItems = append(logItems, level.Name())
-		case MESSAGE:
+		case loggerLevelUpper:
+			logItems = append(logItems, strings.ToUpper(level.Name()))
+		case loggerLevelLower:
+			logItems = append(logItems, strings.ToLower(level.Name()))
+		case logMessage:
 			messageItems := f.formatMessage(message, args...)
 			logItems = append(logItems, messageItems...)
-		case PACKAGE:
+		case goPackage:
 			if caller == nil {
 				caller = getCaller(depth)
 			}
 			logItems = append(logItems, caller.packageName)
-		case FILE:
+		case goFile:
 			if caller == nil {
 				caller = getCaller(depth)
 			}
 			logItems = append(logItems, caller.fileName)
-		case FUNCTION:
+		case goFunction:
 			if caller == nil {
 				caller = getCaller(depth)
 			}
 			logItems = append(logItems, caller.functionName)
-		case LINE:
+		case lineNum:
 			if caller == nil {
 				caller = getCaller(depth)
 			}
 			logItems = append(logItems, strconv.Itoa(caller.line))
 		default:
-			panic("unsupported type: " + strconv.Itoa(int(t1)))
+			panic("unsupported type: " + strconv.Itoa(int(item.kind)))
 		}
 	}
 

@@ -52,7 +52,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		if !ok {
 			return nil, errors.New("unknown transformer type:" + e.Type)
 		}
-		transformer, err := builder.Build(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
+		transformer, err := builder(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
 		if err != nil {
 			return nil, wrapError("build transformer from config error", err)
 		}
@@ -74,7 +74,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		if !ok {
 			return nil, errors.New("unknown appender type: " + e.Type)
 		}
-		appender, err := builder.Build(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
+		appender, err := builder(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
 		if err != nil {
 			return nil, wrapError("build appender from config error", err)
 		}
@@ -91,7 +91,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 
 	var loggers = map[string]bool{}
 	var logConfigs []*LogConfig
-	var rootConfig = &LogConfig{prefix: "", level: DEFAULT_LEVEL, appenders: []Appender{DefaultAppender()}}
+	var rootConfig = &LogConfig{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}
 	for _, e := range root.LoggerElements {
 		if loggers[e.Name] {
 			return nil, errors.New("logger " + e.Name + " already defined")
@@ -131,7 +131,7 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 func newDefaultLogCache() *LoggerCache {
 	return &LoggerCache{
 		loggerMap:  make(map[string]*Logger),
-		logConfigs: []*LogConfig{{prefix: "", level: DEFAULT_LEVEL, appenders: []Appender{DefaultAppender()}}},
+		logConfigs: []*LogConfig{{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}},
 	}
 }
 

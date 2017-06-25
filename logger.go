@@ -3,6 +3,8 @@ package vlog
 import (
 	"sync/atomic"
 	"unsafe"
+	"strings"
+	"time"
 )
 
 var loggerLocked int32 = 0
@@ -25,21 +27,22 @@ func LoggerLocked() bool {
 type Level int32
 
 var levelNames = map[Level]string{
-	TRACE:    "TRACE",
-	DEBUG:    "DEBUG",
-	INFO:     "INFO",
-	WARN:     "WARN",
-	ERROR:    "ERROR",
-	CRITICAL: "CRITICAL",
+	Trace:    "Trace",
+	Debug:    "Debug",
+	Info:     "Info",
+	Warn:     "Warn",
+	Error:    "Error",
+	Critical: "Critical",
 }
 
-var levelNamesReverse = map[string]Level{
-	"TRACE":    TRACE,
-	"DEBUG":    DEBUG,
-	"INFO":     INFO,
-	"WARN":     WARN,
-	"ERROR":    ERROR,
-	"CRITICAL": CRITICAL,
+var levelNamesReverse = reverseLevelNames(levelNames)
+
+func reverseLevelNames(levelNames map[Level]string) map[string]Level {
+	var m = map[string]Level{}
+	for level, str := range levelNames {
+		m[strings.ToUpper(str)] = level
+	}
+	return m
 }
 
 func (l Level) Name() string {
@@ -48,14 +51,14 @@ func (l Level) Name() string {
 
 // log levels
 const (
-	TRACE         Level = 10
-	DEBUG         Level = 20
-	INFO          Level = 30
-	WARN          Level = 40
-	ERROR         Level = 50
-	CRITICAL      Level = 60
-	OFF           Level = 70
-	DEFAULT_LEVEL Level = INFO
+	Trace        Level = 10
+	Debug        Level = 20
+	Info         Level = 30
+	Warn         Level = 40
+	Error        Level = 50
+	Critical     Level = 60
+	Off          Level = 70
+	DefaultLevel Level = Info
 )
 
 type Logger struct {
@@ -69,7 +72,7 @@ func (l *Logger) Name() string {
 	return l.name
 }
 
-// set new Level to this logger. the default log level is DEBUG
+// set new Level to this logger. the default log level is Debug
 func (l *Logger) SetLevel(level Level) {
 	if LoggerLocked() {
 		return
@@ -114,69 +117,70 @@ func (l *Logger) AddAppender(appender Appender) {
 
 // log message with trace level
 func (l *Logger) Trace(message string, args ...interface{}) {
-	l.log(TRACE, message, args...)
+	l.log(Trace, message, args...)
 }
 
 // log message with debug level
 func (l *Logger) Debug(message string, args ...interface{}) {
-	l.log(DEBUG, message, args...)
+	l.log(Debug, message, args...)
 }
 
 // log message with info level
 func (l *Logger) Info(message string, args ...interface{}) {
-	l.log(INFO, message, args...)
+	l.log(Info, message, args...)
 }
 
 // log message with warn level
 func (l *Logger) Warn(message string, args ...interface{}) {
-	l.log(WARN, message, args...)
+	l.log(Warn, message, args...)
 }
 
 // log message with error level
 func (l *Logger) Error(message string, args ...interface{}) {
-	l.log(ERROR, message, args...)
+	l.log(Error, message, args...)
 }
 
 // log message with critical level
 func (l *Logger) Critical(message string, args ...interface{}) {
-	l.log(CRITICAL, message, args...)
+	l.log(Critical, message, args...)
 }
 
 // if this logger log trace message
 func (l *Logger) IsTraceEnable() bool {
-	return l.Level() <= TRACE
+	return l.Level() <= Trace
 }
 
 // if this logger log debug message
 func (l *Logger) IsDebugEnable() bool {
-	return l.Level() <= DEBUG
+	return l.Level() <= Debug
 }
 
 // if this logger log info message
 func (l *Logger) IsInfoEnable() bool {
-	return l.Level() <= INFO
+	return l.Level() <= Info
 }
 
 // if this logger log warn level message
 func (l *Logger) IsWarnEnable() bool {
-	return l.Level() <= WARN
+	return l.Level() <= Warn
 }
 
 // if this logger log error message
 func (l *Logger) IsErrorEnable() bool {
-	return l.Level() <= ERROR
+	return l.Level() <= Error
 }
 
 // if this logger log critical message
 func (l *Logger) IsCriticalEnable() bool {
-	return l.Level() <= CRITICAL
+	return l.Level() <= Critical
 }
 
 func (l *Logger) log(level Level, message string, args ...interface{}) {
 	if l.Level() <= level {
+		now := time.Now()
 		for _, appender := range l.Appenders() {
 			transformer := appender.Transformer()
-			data := transformer.Transform(l.Name(), level, message, args)
+			data := transformer.Transform(l.Name(), level, now, message, args)
 			_, err := appender.Append(data)
 			if err != nil {
 				//what we can do?

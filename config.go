@@ -63,15 +63,9 @@ func LoadXmlConfig(path string) (*RootElement, error) {
 }
 
 // Accept transformer xml config, create an transformer
-type TransformerBuilder interface {
-	// create transformer by config
-	Build(xmlData []byte) (Transformer, error)
-}
+type TransformerBuilder func(xmlData []byte) (Transformer, error)
 
-type PatternTransformerBuilder struct {
-}
-
-func (pb *PatternTransformerBuilder) Build(xmlData []byte) (Transformer, error) {
+func buildPatternTransformer(xmlData []byte) (Transformer, error) {
 	var p struct {
 		Pattern string `xml:"pattern"`
 	}
@@ -88,24 +82,10 @@ func (pb *PatternTransformerBuilder) Build(xmlData []byte) (Transformer, error) 
 }
 
 // Accept appender xml config, create an appender
-type AppenderBuilder interface {
-	// create appender by config
-	Build(xmlData []byte) (Appender, error)
-}
-
-// for build ConsoleAppender
-type ConsoleAppenderBuilder struct {
-}
-
-func (cb *ConsoleAppenderBuilder) Build(xmlData []byte) (Appender, error) {
-	return NewConsoleAppender(), nil
-}
+type AppenderBuilder func(xmlData []byte) (Appender, error)
 
 // for build FileAppender
-type FileAppenderBuilder struct {
-}
-
-func (fb *FileAppenderBuilder) Build(xmlData []byte) (Appender, error) {
+func buildFileAppender(xmlData []byte) (Appender, error) {
 	var setting = &struct {
 		Path string `xml:"path"`
 		Rotater *struct {
@@ -141,13 +121,6 @@ func (fb *FileAppenderBuilder) Build(xmlData []byte) (Appender, error) {
 		}
 	}
 	return NewFileAppender(setting.Path, rotater)
-}
-
-type NopAppenderBuilder struct {
-}
-
-func (*NopAppenderBuilder) Build(xmlData []byte) (Appender, error) {
-	return NewNopAppender(), nil
 }
 
 var builderRegistry *BuilderRegistry = &BuilderRegistry{
@@ -190,8 +163,15 @@ func (tr *BuilderRegistry) GetAppenderBuilder(_type string) (builder AppenderBui
 }
 
 func init() {
-	builderRegistry.RegisterTransformerBuilder("PatternTransformer", &PatternTransformerBuilder{})
-	builderRegistry.RegisterAppenderBuilder("ConsoleAppender", &ConsoleAppenderBuilder{})
-	builderRegistry.RegisterAppenderBuilder("FileAppender", &FileAppenderBuilder{})
-	builderRegistry.RegisterAppenderBuilder("NopAppender", &NopAppenderBuilder{})
+	builderRegistry.RegisterTransformerBuilder("PatternTransformer", buildPatternTransformer)
+	builderRegistry.RegisterAppenderBuilder("ConsoleAppender", func(xmlData []byte) (Appender, error) {
+		return NewConsoleAppender(), nil
+	})
+	builderRegistry.RegisterAppenderBuilder("Console2Appender", func(xmlData []byte) (Appender, error) {
+		return NewConsole2Appender(), nil
+	})
+	builderRegistry.RegisterAppenderBuilder("FileAppender", buildFileAppender)
+	builderRegistry.RegisterAppenderBuilder("NopAppender", func(xmlData []byte) (Appender, error) {
+		return NewNopAppender(), nil
+	})
 }

@@ -18,17 +18,16 @@ func TestLoadXmlConfig(t *testing.T) {
 	transformerElement := root.TransformerElements.TransformerElements[0]
 	assert.Equal(t, "default", transformerElement.Name)
 	assert.Equal(t, "PatternTransformer", transformerElement.Type)
-	assert.Equal(t, "<pattern>{time} [{level}] {logger} - {message}\\n</pattern>",
+	assert.Equal(t, "<pattern>{time} [{Level}] {logger} - {message}\\n</pattern>",
 		strings.TrimSpace(string(transformerElement.InnerXML)))
 
 	loggerElement := root.LoggerElements[0]
 	assert.Equal(t, "github.com/user1", loggerElement.Name)
 }
 
-func TestPatternTransformerBuilder_Build(t *testing.T) {
-	b := &PatternTransformerBuilder{}
+func TestBuildPatternTransformer(t *testing.T) {
 	innerXml := []byte("<root><pattern>{time} [{level}] {logger} - {message}\\n</pattern></root>")
-	tf, err := b.Build(innerXml)
+	tf, err := buildPatternTransformer(innerXml)
 	assert.NoError(t, err)
 	assert.Equal(t, "{time} [{level}] {logger} - {message}\n", tf.(*PatternTransformer).pattern)
 }

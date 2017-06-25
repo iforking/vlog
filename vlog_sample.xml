@@ -1,7 +1,7 @@
 <vlog>
     <transformers>
         <transformer name="default" type="PatternTransformer">
-            <pattern>{time} [{level}] {logger} - {message}\n</pattern>
+            <pattern>{time} [{Level}] {logger} - {message}\n</pattern>
         </transformer>
     </transformers>
     <appenders>
