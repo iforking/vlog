@@ -10,17 +10,17 @@ import (
 var loggerLocked int32 = 0
 
 // unlock logger, so later modifications to loggers will take effect
-func UnlockLogger() {
+func UnfreezeLoggerSetting() {
 	atomic.StoreInt32(&loggerLocked, 0)
 }
 
 // lock logger, so all modifications to loggers will not take effect
-func LockLogger() {
+func FreezeLoggerSetting() {
 	atomic.StoreInt32(&loggerLocked, 1)
 }
 
 // if return true, all modifications to loggers will not take effect
-func LoggerLocked() bool {
+func LoggerSettingFroze() bool {
 	return atomic.LoadInt32(&loggerLocked) == 1
 }
 
@@ -74,7 +74,7 @@ func (l *Logger) Name() string {
 
 // set new Level to this logger. the default log level is Debug
 func (l *Logger) SetLevel(level Level) {
-	if LoggerLocked() {
+	if LoggerSettingFroze() {
 		return
 	}
 	atomic.StoreInt32(&l.level, int32(level))
@@ -87,7 +87,7 @@ func (l *Logger) Level() Level {
 
 // Set appender for this logger
 func (l *Logger) SetAppenders(appender []Appender) {
-	if LoggerLocked() {
+	if LoggerSettingFroze() {
 		return
 	}
 	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appender))
@@ -100,7 +100,7 @@ func (l *Logger) Appenders() []Appender {
 
 // Add one new appender to logger
 func (l *Logger) AddAppender(appender Appender) {
-	if LoggerLocked() {
+	if LoggerSettingFroze() {
 		return
 	}
 	for {
@@ -191,7 +191,7 @@ func (l *Logger) log(level Level, message string, args ...interface{}) {
 
 // create new logger, with name and
 func GetLogger(name string) *Logger {
-	return logCache.Load(name)
+	return loggerCache.Load(name)
 }
 
 // return the log of current package, use package name as logger name

@@ -13,7 +13,7 @@
         </appender>
         <appender name="file2" type="FileAppender" transformer-ref="default">
             <path>logs/my.log</path>
-            <rotater type="SizeRotater" pattern="800m"/>
+            <rotater type="SizeRotater" rotate-size="800m" suffix-width="6"/>
         </appender>
     </appenders>
     <logger name="github.com/user1" level="debug">

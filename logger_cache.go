@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-var logCache = initLogCache()
+var loggerCache = initLogCache()
 
 func initLogCache() *LoggerCache {
 	configPath := os.Getenv("VLOG_CONFIG_FILE")
@@ -32,7 +32,7 @@ func initLogCache() *LoggerCache {
 		fmt.Fprintln(os.Stderr, "parse vlog file error, use default setting:", err)
 		return newDefaultLogCache()
 	}
-	LockLogger()
+	FreezeLoggerSetting()
 	return cache
 }
 
@@ -90,8 +90,8 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 	}
 
 	var loggers = map[string]bool{}
-	var logConfigs []*LogConfig
-	var rootConfig = &LogConfig{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}
+	var logConfigs []*LoggerConfig
+	var rootConfig = &LoggerConfig{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}
 	for _, e := range root.LoggerElements {
 		if loggers[e.Name] {
 			return nil, errors.New("logger " + e.Name + " already defined")
@@ -115,9 +115,9 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 			appenders = append(appenders, appender)
 		}
 		if e.Name == "" {
-			rootConfig = &LogConfig{prefix: e.Name, level: level, appenders: appenders}
+			rootConfig = &LoggerConfig{prefix: e.Name, level: level, appenders: appenders}
 		} else {
-			logConfigs = append(logConfigs, &LogConfig{prefix: e.Name, level: level, appenders: appenders})
+			logConfigs = append(logConfigs, &LoggerConfig{prefix: e.Name, level: level, appenders: appenders})
 		}
 	}
 	logConfigs = append(logConfigs, rootConfig)
@@ -131,12 +131,12 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 func newDefaultLogCache() *LoggerCache {
 	return &LoggerCache{
 		loggerMap:  make(map[string]*Logger),
-		logConfigs: []*LogConfig{{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}},
+		logConfigs: []*LoggerConfig{{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}},
 	}
 }
 
 type LoggerCache struct {
-	logConfigs []*LogConfig
+	logConfigs []*LoggerConfig
 	loggerMap  map[string]*Logger
 	lock       sync.Mutex
 }
@@ -166,9 +166,9 @@ func (lc *LoggerCache) Load(name string) *Logger {
 	return logger
 }
 
-func (lc *LoggerCache) matchConfig(name string) *LogConfig {
+func (lc *LoggerCache) matchConfig(name string) *LoggerConfig {
 	var maxMatchLen = 0
-	var config *LogConfig
+	var config *LoggerConfig
 	for _, logConfig := range lc.logConfigs {
 		if matchPrefix(name, logConfig.prefix) {
 			matchLen := len(logConfig.prefix)
@@ -210,7 +210,7 @@ func matchPrefix(name string, prefix string) bool {
 	return false
 }
 
-type LogConfig struct {
+type LoggerConfig struct {
 	prefix    string
 	level     Level
 	appenders []Appender

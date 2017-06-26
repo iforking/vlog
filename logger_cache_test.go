@@ -42,7 +42,7 @@ func TestLoggerCache_Filter(t *testing.T) {
 func TestCache_SetPrefix(t *testing.T) {
 	defer os.RemoveAll("logs/")
 	defer os.Unsetenv("VLOG_CONFIG_FILE")
-	defer UnlockLogger()
+	defer UnfreezeLoggerSetting()
 	os.Setenv("VLOG_CONFIG_FILE", "vlog_sample.xml")
 	logCache := initLogCache()
 	logger1 := logCache.Load("package1")
