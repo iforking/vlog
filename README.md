@@ -41,7 +41,7 @@ var logger = vlog.CurrentPackageLogger()
 func init() {
 	appender := vlog.NewConsoleAppender()
 	// custom log format
-	transformer, _ := vlog.NewPatternFormatter("{time} [{Level}] {file}:{line} - {message}\n")
+	transformer, _ := vlog.NewPatternTransformer("{time} [{Level}] {file}:{line} - {message}\n")
 	appender.SetTransformer(transformer)
 	// using custom appender
 	logger.SetAppenders([]vlog.Appender{appender})
@@ -61,7 +61,7 @@ appender := vlog.NewFileAppender("path/to/logfile", nil)
 rotater := vlog.NewSizeRotater(800 * 1024*1024, 6)
 appender := vlog.NewFileAppender("path/to/logfile", rotater)
 // appender with rotater rotate log file every day
-rotater := vlog.NewDayRotater("20060102")
+rotater := vlog.NewDailyRotater("20060102")
 appender := vlog.NewFileAppender("path/to/logfile", rotater)
 ```
 
