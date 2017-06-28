@@ -75,6 +75,13 @@ When final routine is deployed, you can use a config file to meet your real need
 Vlog will load config file from path "vlog.xml" by default.
 To use a different path, set env VLOG_CONFIG_FILE to you path, before start the routine.
 
+Note that the logger config select logger by name segment prefix, separated by "/".
+If having multi logger config matched, A Logger will use logger config that have the longest prefix.
+This means a logger setting named with "github.com/user1" will apply to
+loggers with name "github.com/user1", "github.com/user1/project1",
+but not affect loggers with name "github.com/user2", "github.com/user123", or "github.com/user".
+The logger setting with name "" will apply to all loggers, except logger be config by other logger setting.
+
 A sample config file looks like:
 
 ```xml
