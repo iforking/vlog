@@ -59,7 +59,7 @@ type patternItem struct {
 // {message} the log message
 // use {{ to escape  {, use }} to escape }
 // {time} can set custom format via filter, by {time|2006-01-02 15:04:05.000}
-func NewPatternFormatter(pattern string) (Transformer, error) {
+func NewPatternTransformer(pattern string) (Transformer, error) {
 	type State int
 	const (
 		normalState      State = 0
@@ -163,7 +163,7 @@ func NewPatternFormatter(pattern string) (Transformer, error) {
 
 // return formatter with default format
 func NewDefaultPatternTransformer() Transformer {
-	formatter, err := NewPatternFormatter("{time} [{Level}] {logger} - {message}\n")
+	formatter, err := NewPatternTransformer("{time} [{Level}] {logger} - {message}\n")
 	if err != nil {
 		panic(err)
 	}

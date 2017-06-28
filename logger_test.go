@@ -19,7 +19,7 @@ func TestLogger(t *testing.T) {
 		" [Info] github.com/clearthesky/vlog - this is a test\n"))
 
 	appender = NewBytesAppender()
-	transformer, _ := NewPatternFormatter("{time|2006-01-02} {package}/{file} - {message}\n")
+	transformer, _ := NewPatternTransformer("{time|2006-01-02} {package}/{file} - {message}\n")
 	appender.SetTransformer(transformer)
 	logger.SetAppenders([]Appender{appender})
 	logger.Info("this is a test")

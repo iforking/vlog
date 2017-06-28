@@ -151,12 +151,12 @@ func NewTimeRotater(duration time.Duration, suffixFormat string) Rotater {
 }
 
 // create rotater rotate log every hour
-func NewHourRotater(pattern string) Rotater {
+func NewHourlyRotater(pattern string) Rotater {
 	return NewTimeRotater(time.Hour, pattern)
 }
 
 // create rotater rotate log every day
-func NewDayRotater(pattern string) Rotater {
+func NewDailyRotater(pattern string) Rotater {
 	return NewTimeRotater(time.Hour*24, pattern)
 }
 

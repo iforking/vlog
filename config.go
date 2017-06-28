@@ -78,7 +78,7 @@ func buildPatternTransformer(xmlData []byte) (Transformer, error) {
 		return nil, wrapError("unquote PatternTransformer pattern string failed", err)
 	}
 	pattern = strings.Replace(pattern, "__double_quote__", "\"", -1)
-	return NewPatternFormatter(pattern)
+	return NewPatternTransformer(pattern)
 }
 
 // Accept appender xml config, create an appender
@@ -117,9 +117,9 @@ func buildFileAppender(xmlData []byte) (Appender, error) {
 			}
 			rotater = NewSizeRotater(rotateSize, rotaterSetting.SuffixWidth)
 		} else if rType == "DailyRotater" {
-			rotater = NewDayRotater(rotaterSetting.Pattern)
+			rotater = NewDailyRotater(rotaterSetting.Pattern)
 		} else if rType == "HourlyRotater" {
-			rotater = NewHourRotater(rotaterSetting.Pattern)
+			rotater = NewHourlyRotater(rotaterSetting.Pattern)
 		} else {
 			return nil, errors.New("unknown rotater: " + rType)
 		}

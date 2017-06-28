@@ -56,7 +56,7 @@ func TestLogRotate(t *testing.T) {
 }
 
 func TestTimeRotater(t *testing.T) {
-	r := NewHourRotater("2006-01-02-15")
+	r := NewHourlyRotater("2006-01-02-15")
 	ts, _ := time.Parse("2006-01-02 15:04:05", "2017-05-06 11:12:13")
 	r.setInitStatus(ts, 0, []string{})
 
