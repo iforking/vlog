@@ -9,7 +9,7 @@ var logger = vlog.GetLogger(loggerName) // specify a logger name
 var logger = vlog.CurrentPackageLogger() // using full package name as logger name
 ```
 
-## Do log
+## Log message
 
 Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
 Log methods can use format string to format params, if has more params than placeholders, the remain params will be output after formatted string.
@@ -120,8 +120,33 @@ Appenders supportted now:
 | FileAppender | NewFileAppender | FileAppender |
 | NopAppender | NewNopAppender | NopAppender |
 
+## Rotaters
+
+| Rotater Type | Create by Code | Name in Config File |
+| :------: | :------: | :------: |
+| TimeRotater | NewDailyRotater | DailyRotater |
+| TimeRotater | NewHourlyRotater | HourlyRotater |
+| TimeRotater | NewTimeRotater | - |
+| SizeRotater | NewSizeRotater | SizeRotater |
+
 ## Transformers
 
 | Transformer Type | Create by Code | Name in Config File |
 | :------: | :------: | :------: |
-| PatternTransformer | NewPatternFormatter | PatternTransformer |
+| PatternTransformer | NewPatternTransformer | PatternTransformer |
+
+Below variables can be used in PatternTransformer format string:
+
+* {file} filename
+* {package} package name
+* {line} line number
+* {function} function name
+* {time} time
+* {logger} the logger name
+* {Level}/{level}/{LEVEL} the logger level, with different character case
+* {message} the log message
+
+Use {{ to escape  {, use }} to escape }
+
+{time} can set custom format via filter, by {time|2006-01-02 15:04:05.000}
+
