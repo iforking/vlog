@@ -12,8 +12,7 @@ var logger = vlog.CurrentPackageLogger() // using full package name as logger na
 ## Do log
 
 Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
-Log methods can use format string to format params, if has more params than placeholders,
-the param will be print after formatted string, joined by a space char.
+Log methods can use format string to format params, if has more params than placeholders, the remain params will be output after formatted string.
 
 ```go
 logger.Info("start the server")
@@ -21,20 +20,19 @@ logger.Info("start the server at {}:{}", host, port)
 logger.Info("start the server at", host+":"+strconv.itoa(port))
 logger.Error("start server error:", err)
 logger.Error("start server {}:{} error:", host, port, err)
-
 ```
 
-Logger also have IsXxxxEnable methods, to avoid unnecessary cost:
+Loggers also have IsXxxxEnable methods, to avoid unnecessary converting cost:
 
 ```go
 if logger.IsDebugEnable() {
-    logger.Debug("server accept connection:", expensiveConvert(conn))
+	logger.Debug("server accept connection:", expensiveConvert(conn))
 }
 ```
 
 ## Setting by code
 
-By default, logger only output message with level info or above, using default message format, to standard output.
+By default, logger only output message with info level or above, using default message format, to standard output.
 To change this, set custom Appender/Level/Transformer to the logger.
 
 ```go
@@ -47,7 +45,7 @@ func init() {
 	appender.SetTransformer(transformer)
 	// using custom appender
 	logger.SetAppenders([]vlog.Appender{appender})
-	// set level to debug, default info
+	// set level to debug, will output all message with level equal or higher than Debug
 	logger.SetLevel(vlog.Debug)
 }
 ```
@@ -69,13 +67,13 @@ appender := vlog.NewFileAppender("path/to/logfile", rotater)
 
 ## Setting by config file
 
-Loggers can also be set by config file.
+Loggers can also be set by a xml format config file.
 If a config file is used, all settings by code will not take effect, vlog only obey the config file.
 So you can set logger by code in your final or in your lib in development.
 When final routine is deployed, you can use a config file to meet your real need.
 
-The log config file uses xml format, vlog will load config file from path "vlog.xml" by default.
-To use a different path, set env VLOG_CONFIG_FILE to you path, then run your routine.
+Vlog will load config file from path "vlog.xml" by default.
+To use a different path, set env VLOG_CONFIG_FILE to you path, before start the routine.
 
 A sample config file looks like:
 
@@ -94,7 +92,7 @@ A sample config file looks like:
             <rotater type="DailyRotater" pattern="20060102"/>
         </appender>
         <appender name="file2" type="FileAppender" transformer-ref="default">
-            <path>logs/my.log</path>
+            <path>logs/my2.log</path>
             <rotater type="SizeRotater" rotate-size="800m" suffix-width="6"/>
         </appender>
     </appenders>
@@ -113,4 +111,17 @@ A sample config file looks like:
 
 ## Appenders
 
+Appenders supportted now:
+
+| Appender Type | Create by Code | Name in Config File |
+| :------: | :------: | :------: |
+| ConsoleAppender | NewConsoleAppender | ConsoleAppender |
+| ConsoleAppender | NewConsole2Appender | Console2Appender |
+| FileAppender | NewFileAppender | FileAppender |
+| NopAppender | NewNopAppender | NopAppender |
+
 ## Transformers
+
+| Transformer Type | Create by Code | Name in Config File |
+| :------: | :------: | :------: |
+| PatternTransformer | NewPatternFormatter | PatternTransformer |
