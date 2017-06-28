@@ -1,1 +1,116 @@
 The Very Log lib for golang
+
+## Get logger
+
+Each logger has a name, there is only one logger for same name. You can pass a name, or just using current package name as logger name:
+
+```go
+var logger = vlog.GetLogger(loggerName) // specify a logger name
+var logger = vlog.CurrentPackageLogger() // using full package name as logger name
+```
+
+## Do log
+
+Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
+Log methods can use format string to format params, if has more params than placeholders,
+the param will be print after formatted string, joined by a space char.
+
+```go
+logger.Info("start the server")
+logger.Info("start the server at {}:{}", host, port)
+logger.Info("start the server at", host+":"+strconv.itoa(port))
+logger.Error("start server error:", err)
+logger.Error("start server {}:{} error:", host, port, err)
+
+```
+
+Logger also have IsXxxxEnable methods, to avoid unnecessary cost:
+
+```go
+if logger.IsDebugEnable() {
+    logger.Debug("server accept connection:", expensiveConvert(conn))
+}
+```
+
+## Setting by code
+
+By default, logger only output message with level info or above, using default message format, to standard output.
+To change this, set custom Appender/Level/Transformer to the logger.
+
+```go
+var logger = vlog.CurrentPackageLogger()
+
+func init() {
+	appender := vlog.NewConsoleAppender()
+	// custom log format
+	transformer, _ := vlog.NewPatternFormatter("{time} [{Level}] {file}:{line} - {message}\n")
+	appender.SetTransformer(transformer)
+	// using custom appender
+	logger.SetAppenders([]vlog.Appender{appender})
+	// set level to debug, default info
+	logger.SetLevel(vlog.Debug)
+}
+```
+
+## FileAppender log rotate
+
+If using FileAppender to write log into file, a log rotater can be set to rotate log file, by log file size or time.
+
+```go
+// appender without rotater
+appender := vlog.NewFileAppender("path/to/logfile", nil)
+// appender with rotater rotate log file every 800m
+rotater := vlog.NewSizeRotater(800 * 1024*1024, 6)
+appender := vlog.NewFileAppender("path/to/logfile", rotater)
+// appender with rotater rotate log file every day
+rotater := vlog.NewDayRotater("20060102")
+appender := vlog.NewFileAppender("path/to/logfile", rotater)
+```
+
+## Setting by config file
+
+Loggers can also be set by config file.
+If a config file is used, all settings by code will not take effect, vlog only obey the config file.
+So you can set logger by code in your final or in your lib in development.
+When final routine is deployed, you can use a config file to meet your real need.
+
+The log config file uses xml format, vlog will load config file from path "vlog.xml" by default.
+To use a different path, set env VLOG_CONFIG_FILE to you path, then run your routine.
+
+A sample config file looks like:
+
+```xml
+<vlog>
+    <transformers>
+        <transformer name="default" type="PatternTransformer">
+            <pattern>{time} [{Level}] {logger} - {message}\n</pattern>
+        </transformer>
+    </transformers>
+    <appenders>
+        <appender name="console" type="ConsoleAppender" transformer-ref="default">
+        </appender>
+        <appender name="file" type="FileAppender" transformer-ref="default">
+            <path>logs/my.log</path>
+            <rotater type="DailyRotater" pattern="20060102"/>
+        </appender>
+        <appender name="file2" type="FileAppender" transformer-ref="default">
+            <path>logs/my.log</path>
+            <rotater type="SizeRotater" rotate-size="800m" suffix-width="6"/>
+        </appender>
+    </appenders>
+    <logger name="github.com/user1" level="debug">
+        <appender-ref name="console"/>
+        <appender-ref name="file"/>
+    </logger>
+    <logger name="gopkg.in/package1" level="info">
+        <appender-ref name="console"/>
+    </logger>
+    <logger name="" level="warn">
+        <appender-ref name="console"/>
+    </logger>
+</vlog>
+```
+
+## Appenders
+
+## Transformers
