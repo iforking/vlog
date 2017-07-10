@@ -115,6 +115,13 @@ func (l *Logger) AddAppender(appender Appender) {
 	}
 }
 
+// Set transformer, apply to all appenders the logger current have
+func (l *Logger) SetTransformerForAppenders(transformer Transformer) {
+	for _, appender := range l.Appenders() {
+		appender.SetTransformer(transformer)
+	}
+}
+
 // log message with trace level
 func (l *Logger) Trace(message string, args ...interface{}) {
 	l.log(Trace, message, args...)
