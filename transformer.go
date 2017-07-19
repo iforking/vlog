@@ -1,7 +1,6 @@
 package vlog
 
 import (
-	"fmt"
 	"strings"
 	"errors"
 	"strconv"
@@ -11,16 +10,17 @@ import (
 // Transformer convert one log record to byte array data.
 // Transformer should can be share across goroutines, and user Should always reuse transformers.
 type Transformer interface {
-	Transform(logger string, level Level, now time.Time, message string, args []interface{}) []byte
+	Transform(logger string, level Level, now time.Time, message string) []byte
 }
 
 var defaultTransformer = NewDefaultPatternTransformer()
-// The default transformer used if not set
+// DefaultTransformer the default transformer used if not set
 func DefaultTransformer() Transformer {
 	return defaultTransformer
 }
 
-// Transform one log record using pattern, to string
+var _ Transformer = (*PatternTransformer)(nil)
+// PatternTransformer transform one log record using pattern, to string
 type PatternTransformer struct {
 	pattern string
 	items   []patternItem
@@ -59,7 +59,7 @@ type patternItem struct {
 // {message} the log message
 // use {{ to escape  {, use }} to escape }
 // {time} can set custom format via filter, by {time|2006-01-02 15:04:05.000}
-func NewPatternTransformer(pattern string) (Transformer, error) {
+func NewPatternTransformer(pattern string) (*PatternTransformer, error) {
 	type State int
 	const (
 		normalState      State = 0
@@ -162,7 +162,7 @@ func NewPatternTransformer(pattern string) (Transformer, error) {
 }
 
 // return formatter with default format
-func NewDefaultPatternTransformer() Transformer {
+func NewDefaultPatternTransformer() *PatternTransformer {
 	formatter, err := NewPatternTransformer("{time} [{Level}] {logger} - {message}\n")
 	if err != nil {
 		panic(err)
@@ -171,8 +171,7 @@ func NewDefaultPatternTransformer() Transformer {
 }
 
 // format log data to byte array data
-func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string,
-	args []interface{}) []byte {
+func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string) []byte {
 
 	logItems := []string{}
 	var caller *caller
@@ -198,8 +197,7 @@ func (f *PatternTransformer) Transform(logger string, level Level, now time.Time
 		case loggerLevelLower:
 			logItems = append(logItems, strings.ToLower(level.Name()))
 		case logMessage:
-			messageItems := f.formatMessage(message, args...)
-			logItems = append(logItems, messageItems...)
+			logItems = append(logItems, message)
 		case goPackage:
 			if caller == nil {
 				caller = getCaller(depth)
@@ -226,28 +224,4 @@ func (f *PatternTransformer) Transform(logger string, level Level, now time.Time
 	}
 
 	return []byte(strings.Join(logItems, ""))
-}
-
-func (f *PatternTransformer) formatMessage(message string, args ...interface{}) []string {
-	argNum := len(args)
-	items := strings.SplitN(message, "{}", argNum+1)
-
-	results := []string{}
-	for idx, item := range items {
-		results = append(results, item)
-		if idx >= 0 && idx < len(items)-1 && idx < argNum {
-			results = append(results, f.formatArg(args[idx]))
-		}
-	}
-
-	for idx := len(items) - 1; idx < argNum; idx += 1 {
-		results = append(results, " ")
-		results = append(results, f.formatArg(args[idx]))
-	}
-
-	return results
-}
-
-func (f *PatternTransformer) formatArg(arg interface{}) string {
-	return fmt.Sprintf("%v", arg)
 }

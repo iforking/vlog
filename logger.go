@@ -5,6 +5,7 @@ import (
 	"unsafe"
 	"strings"
 	"time"
+	"fmt"
 )
 
 var loggerLocked int32 = 0
@@ -123,33 +124,33 @@ func (l *Logger) SetTransformerForAppenders(transformer Transformer) {
 }
 
 // log message with trace level
-func (l *Logger) Trace(message string, args ...interface{}) {
-	l.log(Trace, message, args...)
+func (l *Logger) Trace(message string, args ...interface{}) error {
+	return l.log(Trace, message, args...)
 }
 
 // log message with debug level
-func (l *Logger) Debug(message string, args ...interface{}) {
-	l.log(Debug, message, args...)
+func (l *Logger) Debug(message string, args ...interface{}) error {
+	return l.log(Debug, message, args...)
 }
 
 // log message with info level
-func (l *Logger) Info(message string, args ...interface{}) {
-	l.log(Info, message, args...)
+func (l *Logger) Info(message string, args ...interface{}) error {
+	return l.log(Info, message, args...)
 }
 
 // log message with warn level
-func (l *Logger) Warn(message string, args ...interface{}) {
-	l.log(Warn, message, args...)
+func (l *Logger) Warn(message string, args ...interface{}) error {
+	return l.log(Warn, message, args...)
 }
 
 // log message with error level
-func (l *Logger) Error(message string, args ...interface{}) {
-	l.log(Error, message, args...)
+func (l *Logger) Error(message string, args ...interface{}) error {
+	return l.log(Error, message, args...)
 }
 
 // log message with critical level
-func (l *Logger) Critical(message string, args ...interface{}) {
-	l.log(Critical, message, args...)
+func (l *Logger) Critical(message string, args ...interface{}) error {
+	return l.log(Critical, message, args...)
 }
 
 // if this logger log trace message
@@ -182,18 +183,48 @@ func (l *Logger) IsCriticalEnable() bool {
 	return l.Level() <= Critical
 }
 
-func (l *Logger) log(level Level, message string, args ...interface{}) {
-	if l.Level() <= level {
+func (l *Logger) log(level Level, message string, args ...interface{}) error {
+	appenders := l.Appenders()
+	if l.Level() <= level && len(appenders) > 0 {
 		now := time.Now()
-		for _, appender := range l.Appenders() {
+		fMessage := formatMessage(message, args...)
+		name := l.Name()
+		//TODO: async, parallel write
+		for _, appender := range appenders {
 			transformer := appender.Transformer()
-			data := transformer.Transform(l.Name(), level, now, message, args)
-			_, err := appender.Append(data)
+			data := transformer.Transform(name, level, now, fMessage)
+			err := appender.Append(name, level, data)
 			if err != nil {
-				//what we can do?
+				//TODO: collection errors
+				return err
 			}
 		}
 	}
+	return nil
+}
+
+func formatMessage(message string, args ...interface{}) string {
+	argNum := len(args)
+	items := strings.SplitN(message, "{}", argNum+1)
+
+	results := []string{}
+	for idx, item := range items {
+		results = append(results, item)
+		if idx >= 0 && idx < len(items)-1 && idx < argNum {
+			results = append(results, formatArg(args[idx]))
+		}
+	}
+
+	for idx := len(items) - 1; idx < argNum; idx += 1 {
+		results = append(results, " ")
+		results = append(results, formatArg(args[idx]))
+	}
+
+	return strings.Join(results, "")
+}
+
+func formatArg(arg interface{}) string {
+	return fmt.Sprintf("%v", arg)
 }
 
 // create new logger, with name and

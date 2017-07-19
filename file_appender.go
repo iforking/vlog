@@ -22,10 +22,12 @@ type FileAppender struct {
 	normal  bool
 }
 
+var _ Appender = (*FileAppender)(nil)
+
 // create new file appender.
 // path is the base path and filename of log file.
 // appender can be nil, then the file would not be rotated.
-func NewFileAppender(path string, rotater Rotater) (Appender, error) {
+func NewFileAppender(path string, rotater Rotater) (*FileAppender, error) {
 	if len(path) == 0 {
 		return nil, errors.New("file path for FIleAppender is empty")
 	}
@@ -50,7 +52,7 @@ func NewFileAppender(path string, rotater Rotater) (Appender, error) {
 	}, nil
 }
 
-func (f *FileAppender) Append(data []byte) (written int, err error) {
+func (f *FileAppender) Append(name string, level Level, data []byte) error {
 	if f.rotater != nil {
 		shouldRotate, suffix := f.rotater.Check(time.Now(), len(data), 1)
 		if shouldRotate {
@@ -65,7 +67,8 @@ func (f *FileAppender) Append(data []byte) (written int, err error) {
 		}
 	}
 
-	return f.currentFile().Write(data)
+	_, err := f.currentFile().Write(data)
+	return err
 }
 
 func (f *FileAppender) currentFile() *os.File {

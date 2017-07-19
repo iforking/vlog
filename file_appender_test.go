@@ -12,7 +12,7 @@ func TestFileAppender_Write(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove("test_file.log")
 
-	appender.Append([]byte("This is a test\n"))
+	appender.Append("", Debug, []byte("This is a test\n"))
 }
 
 func TestFileAppender_Write2(t *testing.T) {
@@ -20,7 +20,7 @@ func TestFileAppender_Write2(t *testing.T) {
 	defer os.RemoveAll("multi/")
 	assert.NoError(t, err)
 
-	appender.Append([]byte("This is a test\n"))
+	appender.Append("", Debug, []byte("This is a test\n"))
 }
 
 func TestGetLogSuffixes(t *testing.T) {
@@ -41,10 +41,9 @@ func TestGetLogSuffixes(t *testing.T) {
 
 func TestLogRotate(t *testing.T) {
 	defer os.RemoveAll("logs/")
-	a, err := NewFileAppender("logs/test_file.log", nil)
-	a.Append([]byte("first log\n"))
+	appender, err := NewFileAppender("logs/test_file.log", nil)
+	appender.Append("", Debug, []byte("first log\n"))
 	assert.NoError(t, err)
-	appender := a.(*FileAppender)
 	appender.rotateFile("logs/test_file.1234.log")
 
 	_, err = os.Stat("logs/test_file.1234.log")
@@ -78,7 +77,7 @@ func TestTimeRotater(t *testing.T) {
 }
 
 func TestSizeRotater(t *testing.T) {
-	rotater := NewSizeRotater(1024 * 1024, 5)
+	rotater := NewSizeRotater(1024*1024, 5)
 	rotater.setInitStatus(time.Now(), 1024*1023, []string{"xxxx", "123", "0014", "012"})
 
 	b, s := rotater.Check(time.Now(), 1023, 1)
