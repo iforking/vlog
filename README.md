@@ -82,39 +82,7 @@ loggers with name "github.com/user1", "github.com/user1/project1",
 but not affect loggers with name "github.com/user2", "github.com/user123", or "github.com/user".
 The logger setting with name "" will apply to all loggers, except logger be config by other logger setting.
 
-A sample config file looks like:
-
-```xml
-<vlog>
-    <transformers>
-        <transformer name="default" type="PatternTransformer">
-            <pattern>{time} [{Level}] {logger} - {message}\n</pattern>
-        </transformer>
-    </transformers>
-    <appenders>
-        <appender name="console" type="ConsoleAppender" transformer-ref="default">
-        </appender>
-        <appender name="file" type="FileAppender" transformer-ref="default">
-            <path>logs/my.log</path>
-            <rotater type="DailyRotater" pattern="20060102"/>
-        </appender>
-        <appender name="file2" type="FileAppender" transformer-ref="default">
-            <path>logs/my2.log</path>
-            <rotater type="SizeRotater" rotate-size="800m" suffix-width="6"/>
-        </appender>
-    </appenders>
-    <logger name="github.com/user1" level="debug">
-        <appender-ref name="console"/>
-        <appender-ref name="file"/>
-    </logger>
-    <logger name="gopkg.in/package1" level="info">
-        <appender-ref name="console"/>
-    </logger>
-    <logger name="" level="warn">
-        <appender-ref name="console"/>
-    </logger>
-</vlog>
-```
+Click to see a [sample config file](https://raw.githubusercontent.com/clearthesky/vlog/master/vlog_sample.xml).
 
 ## Appenders
 
@@ -125,6 +93,7 @@ Appenders supportted now:
 | ConsoleAppender | NewConsoleAppender | ConsoleAppender |
 | ConsoleAppender | NewConsole2Appender | Console2Appender |
 | FileAppender | NewFileAppender | FileAppender |
+| SyslogAppender | SyslogAppender | SyslogAppender |
 | NopAppender | NewNopAppender | NopAppender |
 
 ## Rotaters

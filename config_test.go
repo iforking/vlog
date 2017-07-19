@@ -36,3 +36,10 @@ func TestBuildPatternTransformer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "{time} [{level}] {logger} - {message}\n", tf.(*PatternTransformer).pattern)
 }
+
+func TestBuildSyslogAppender(t *testing.T) {
+	innerXml := []byte("<root><tag>mylog</tag></root>")
+	sa, err := buildSyslogAppender(innerXml)
+	assert.NoError(t, err)
+	assert.NotNil(t, sa.(*SyslogAppender))
+}

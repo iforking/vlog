@@ -15,6 +15,9 @@
             <path>logs/my2.log</path>
             <rotater type="SizeRotater" rotate-size="800m" suffix-width="6"/>
         </appender>
+        <appender name="syslog" type="SyslogAppender">
+            <tag>mytag</tag>
+        </appender>
     </appenders>
     <logger name="github.com/user1" level="debug">
         <appender-ref name="console"/>

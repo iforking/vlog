@@ -3,7 +3,6 @@ package vlog
 import (
 	"sync"
 	"os"
-	"fmt"
 	"errors"
 	"strings"
 	"unsafe"
@@ -23,14 +22,12 @@ func initLogCache() *LoggerCache {
 	}
 	root, err := LoadXmlConfig(configPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "load vlog file error, use default setting:", err)
-		return newDefaultLogCache()
+		panic(wrapError("load vlog config file error", err))
 	}
 
 	cache, err := createFromConfig(root)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "parse vlog file error, use default setting:", err)
-		return newDefaultLogCache()
+		panic(wrapError("parse vlog config file error", err))
 	}
 	FreezeLoggerSetting()
 	return cache
@@ -78,12 +75,16 @@ func createFromConfig(root *RootElement) (*LoggerCache, error) {
 		if err != nil {
 			return nil, wrapError("build appender from config error", err)
 		}
+
+		var transformer Transformer
 		if e.TransformerName == "" {
-			return nil, errors.New("appender " + e.Name + " transformer not set")
-		}
-		transformer, ok := transformerMap[e.TransformerName]
-		if !ok {
-			return nil, errors.New("transformer " + e.TransformerName + " not exists")
+			transformer = DefaultTransformer()
+		} else {
+			if t, ok := transformerMap[e.TransformerName]; !ok {
+				return nil, errors.New("transformer " + e.TransformerName + " not exists")
+			} else {
+				transformer = t
+			}
 		}
 		appender.SetTransformer(transformer)
 		appenderMap[e.Name] = appender

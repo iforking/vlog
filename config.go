@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// the root of config elements
+// RootElement is the root of config elements
 type RootElement struct {
 	XMLName             struct{}    `xml:"vlog"`
 	LoggerElements      []*LoggerElement `xml:"logger"`
@@ -48,7 +48,7 @@ type TransformerElement struct {
 	InnerXML []byte `xml:",innerxml"`
 }
 
-// load logger config from xml config file
+// LoadXmlConfig load logger config from xml config file
 func LoadXmlConfig(path string) (*RootElement, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -62,7 +62,7 @@ func LoadXmlConfig(path string) (*RootElement, error) {
 	return &root, nil
 }
 
-// Accept transformer xml config, create an transformer
+// TransformerBuilder accept transformer xml config, create an transformer
 type TransformerBuilder func(xmlData []byte) (Transformer, error)
 
 func buildPatternTransformer(xmlData []byte) (Transformer, error) {
@@ -84,7 +84,7 @@ func buildPatternTransformer(xmlData []byte) (Transformer, error) {
 // Accept appender xml config, create an appender
 type AppenderBuilder func(xmlData []byte) (Appender, error)
 
-// for build FileAppender
+// buildFileAppender create FileAppender from xml config data
 func buildFileAppender(xmlData []byte) (Appender, error) {
 	var setting = &struct {
 		Path string `xml:"path"`
@@ -127,6 +127,23 @@ func buildFileAppender(xmlData []byte) (Appender, error) {
 	return NewFileAppender(setting.Path, rotater)
 }
 
+// buildSyslogAppender create SyslogAppender from xml config data
+func buildSyslogAppender(xmlData []byte) (Appender, error) {
+	var setting = &struct {
+		Network string `xml:"network"`
+		Address string `xml:"address"`
+		Tag     string `xml:"tag"`
+	}{}
+	err := xml.Unmarshal(xmlData, setting)
+	if err != nil {
+		return nil, wrapError("parse syslog config error", err)
+	}
+	if len(setting.Tag) == 0 {
+		return nil, errors.New("tag not set for syslog appender")
+	}
+	return NewSyslogAppenderToAddress(setting.Network, setting.Address, setting.Tag)
+}
+
 var builderRegistry *BuilderRegistry = &BuilderRegistry{
 	transformerBuilderMap: map[string]TransformerBuilder{},
 	appenderBuilderMap:    map[string]AppenderBuilder{},
@@ -138,7 +155,7 @@ type BuilderRegistry struct {
 	lock                  sync.Mutex
 }
 
-// register one transformer builder, so can be used in config file
+// RegisterTransformerBuilder register one transformer builder, so can be used in config file
 func (tr *BuilderRegistry) RegisterTransformerBuilder(_type string, builder TransformerBuilder) {
 	tr.lock.Lock()
 	tr.transformerBuilderMap[_type] = builder
@@ -152,7 +169,7 @@ func (tr *BuilderRegistry) GetTransformerBuilder(_type string) (builder Transfor
 	return
 }
 
-// register one appender builder, so can be used in config file
+// RegisterAppenderBuilder register one appender builder, so can be used in config file
 func (tr *BuilderRegistry) RegisterAppenderBuilder(_type string, builder AppenderBuilder) {
 	tr.lock.Lock()
 	tr.appenderBuilderMap[_type] = builder
@@ -178,4 +195,5 @@ func init() {
 	builderRegistry.RegisterAppenderBuilder("NopAppender", func(xmlData []byte) (Appender, error) {
 		return NewNopAppender(), nil
 	})
+	builderRegistry.RegisterAppenderBuilder("SyslogAppender", buildSyslogAppender)
 }
