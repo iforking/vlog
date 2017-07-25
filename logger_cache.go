@@ -1,10 +1,10 @@
 package vlog
 
 import (
-	"sync"
-	"os"
 	"errors"
+	"os"
 	"strings"
+	"sync"
 	"unsafe"
 )
 
@@ -20,7 +20,7 @@ func initLogCache() *LoggerCache {
 		// no log config file
 		return newDefaultLogCache()
 	}
-	root, err := LoadXmlConfig(configPath)
+	root, err := loadXMLConfig(configPath)
 	if err != nil {
 		panic(wrapError("load vlog config file error", err))
 	}
@@ -33,7 +33,7 @@ func initLogCache() *LoggerCache {
 	return cache
 }
 
-func createFromConfig(root *RootElement) (*LoggerCache, error) {
+func createFromConfig(root *rootElement) (*LoggerCache, error) {
 	var transformerMap = map[string]Transformer{}
 	for _, e := range root.TransformerElements.TransformerElements {
 		if e.Name == "" {
@@ -136,12 +136,14 @@ func newDefaultLogCache() *LoggerCache {
 	}
 }
 
+// LoggerCache contais loggers with name as key
 type LoggerCache struct {
 	logConfigs []*LoggerConfig
 	loggerMap  map[string]*Logger
 	lock       sync.Mutex
 }
 
+// Load return logger for with name, using cached one or create new one if logger with name not exist
 func (lc *LoggerCache) Load(name string) *Logger {
 	lc.lock.Lock()
 	defer lc.lock.Unlock()
@@ -211,6 +213,7 @@ func matchPrefix(name string, prefix string) bool {
 	return false
 }
 
+// LoggerConfig usded to config logger level and appenders
 type LoggerConfig struct {
 	prefix    string
 	level     Level

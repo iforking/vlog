@@ -1,9 +1,9 @@
 package vlog
 
 import (
-	"strings"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,12 +14,14 @@ type Transformer interface {
 }
 
 var defaultTransformer = NewDefaultPatternTransformer()
+
 // DefaultTransformer the default transformer used if not set
 func DefaultTransformer() Transformer {
 	return defaultTransformer
 }
 
 var _ Transformer = (*PatternTransformer)(nil)
+
 // PatternTransformer transform one log record using pattern, to string
 type PatternTransformer struct {
 	pattern string
@@ -48,6 +50,7 @@ type patternItem struct {
 	filter string // the filter
 }
 
+// NewPatternTransformer create new pattern transformer
 // below variables can be used in format string:
 // {file} filename
 // {package} package name
@@ -161,7 +164,7 @@ func NewPatternTransformer(pattern string) (*PatternTransformer, error) {
 	return &PatternTransformer{pattern: pattern, items: items}, nil
 }
 
-// return formatter with default format
+// NewDefaultPatternTransformer return formatter with default format
 func NewDefaultPatternTransformer() *PatternTransformer {
 	formatter, err := NewPatternTransformer("{time} [{Level}] {logger} - {message}\n")
 	if err != nil {
@@ -170,7 +173,7 @@ func NewDefaultPatternTransformer() *PatternTransformer {
 	return formatter
 }
 
-// format log data to byte array data
+// Transform format log data to byte array data
 func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string) []byte {
 
 	logItems := []string{}

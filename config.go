@@ -1,60 +1,60 @@
 package vlog
 
 import (
-	"io/ioutil"
 	"encoding/xml"
-	"sync"
 	"errors"
+	"io/ioutil"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-// RootElement is the root of config elements
-type RootElement struct {
-	XMLName             struct{}    `xml:"vlog"`
-	LoggerElements      []*LoggerElement `xml:"logger"`
-	AppenderElements    *AppenderElements `xml:"appenders"`
-	TransformerElements *TransformerElements `xml:"transformers"`
+// rootElement is the root of config elements
+type rootElement struct {
+	XMLName             struct{}             `xml:"vlog"`
+	LoggerElements      []*loggerElement     `xml:"logger"`
+	AppenderElements    *appenderElements    `xml:"appenders"`
+	TransformerElements *transformerElements `xml:"transformers"`
 }
 
-type AppenderRef struct {
+type appenderRef struct {
 	Name string `xml:"name,attr"`
 }
 
-type LoggerElement struct {
-	Name         string `xml:"name,attr"`
-	Level        string `xml:"level,attr"`
-	AppenderRefs []AppenderRef `xml:"appender-ref"`
+type loggerElement struct {
+	Name         string        `xml:"name,attr"`
+	Level        string        `xml:"level,attr"`
+	AppenderRefs []appenderRef `xml:"appender-ref"`
 }
 
-type AppenderElements struct {
-	AppenderElements []*AppenderElement `xml:"appender"`
+type appenderElements struct {
+	AppenderElements []*appenderElement `xml:"appender"`
 }
 
-type AppenderElement struct {
+type appenderElement struct {
 	Name            string `xml:"name,attr"`
 	Type            string `xml:"type,attr"`
 	TransformerName string `xml:"transformer-ref,attr"`
 	InnerXML        []byte `xml:",innerxml"`
 }
 
-type TransformerElements struct {
-	TransformerElements []*TransformerElement `xml:"transformer"`
+type transformerElements struct {
+	TransformerElements []*transformerElement `xml:"transformer"`
 }
 
-type TransformerElement struct {
+type transformerElement struct {
 	Name     string `xml:"name,attr"`
 	Type     string `xml:"type,attr"`
 	InnerXML []byte `xml:",innerxml"`
 }
 
-// LoadXmlConfig load logger config from xml config file
-func LoadXmlConfig(path string) (*RootElement, error) {
+// loadXMLConfig load logger config from xml config file
+func loadXMLConfig(path string) (*rootElement, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, wrapError("load log config file failed", err)
 	}
-	var root RootElement
+	var root rootElement
 	err = xml.Unmarshal(data, &root)
 	if err != nil {
 		return nil, wrapError("unmarshal log config file failed", err)
@@ -81,18 +81,18 @@ func buildPatternTransformer(xmlData []byte) (Transformer, error) {
 	return NewPatternTransformer(pattern)
 }
 
-// Accept appender xml config, create an appender
+// AppenderBuilder Accept appender xml config, create an appender
 type AppenderBuilder func(xmlData []byte) (Appender, error)
 
 // buildFileAppender create FileAppender from xml config data
 func buildFileAppender(xmlData []byte) (Appender, error) {
 	var setting = &struct {
-		Path string `xml:"path"`
+		Path    string `xml:"path"`
 		Rotater *struct {
 			Type        string `xml:"type,attr"`
-			Pattern     string `xml:"pattern,attr"`     // for time rotater
-			Size        string `xml:"rotate-size,attr"` // for size rotater
-			SuffixWidth int `xml:"suffix-width,attr"`   // for size rotater
+			Pattern     string `xml:"pattern,attr"`      // for time rotater
+			Size        string `xml:"rotate-size,attr"`  // for size rotater
+			SuffixWidth int    `xml:"suffix-width,attr"` // for size rotater
 		} `xml:"rotater"`
 	}{}
 	err := xml.Unmarshal(xmlData, setting)
@@ -103,7 +103,7 @@ func buildFileAppender(xmlData []byte) (Appender, error) {
 	if setting.Path == "" {
 		return nil, errors.New("FileAppender path not set")
 	}
-	var rotater Rotater = nil
+	var rotater Rotater
 	rotaterSetting := setting.Rotater
 	if rotaterSetting != nil {
 		rType := rotaterSetting.Type
@@ -144,11 +144,12 @@ func buildSyslogAppender(xmlData []byte) (Appender, error) {
 	return NewSyslogAppenderToAddress(setting.Network, setting.Address, setting.Tag)
 }
 
-var builderRegistry *BuilderRegistry = &BuilderRegistry{
+var builderRegistry = &BuilderRegistry{
 	transformerBuilderMap: map[string]TransformerBuilder{},
 	appenderBuilderMap:    map[string]AppenderBuilder{},
 }
 
+// BuilderRegistry register transormer builder and appender builders
 type BuilderRegistry struct {
 	transformerBuilderMap map[string]TransformerBuilder
 	appenderBuilderMap    map[string]AppenderBuilder
@@ -162,6 +163,7 @@ func (tr *BuilderRegistry) RegisterTransformerBuilder(_type string, builder Tran
 	tr.lock.Unlock()
 }
 
+// GetTransformerBuilder return transformer builder for the transformer type
 func (tr *BuilderRegistry) GetTransformerBuilder(_type string) (builder TransformerBuilder, ok bool) {
 	tr.lock.Lock()
 	builder, ok = tr.transformerBuilderMap[_type]
@@ -176,6 +178,7 @@ func (tr *BuilderRegistry) RegisterAppenderBuilder(_type string, builder Appende
 	tr.lock.Unlock()
 }
 
+// GetAppenderBuilder return appender builder for the transformer type
 func (tr *BuilderRegistry) GetAppenderBuilder(_type string) (builder AppenderBuilder, ok bool) {
 	tr.lock.Lock()
 	builder, ok = tr.appenderBuilderMap[_type]

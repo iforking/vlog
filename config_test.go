@@ -1,13 +1,13 @@
 package vlog
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
 )
 
 func TestLoadXmlConfig(t *testing.T) {
-	root, err := LoadXmlConfig("vlog_sample.xml")
+	root, err := loadXMLConfig("vlog_sample.xml")
 	assert.NoError(t, err)
 
 	appenderElement := root.AppenderElements.AppenderElements[0]

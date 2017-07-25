@@ -1,8 +1,8 @@
 package vlog
 
 import (
-	"log/syslog"
 	"errors"
+	"log/syslog"
 	"strconv"
 	"time"
 )
@@ -51,7 +51,7 @@ func NewSyslogAppender(tag string) (*SyslogAppender, error) {
 	return &SyslogAppender{log: log, levelMap: defaultLevelMap}, nil
 }
 
-// NewSyslogAppender create syslog appender, to a log daemon connected by network address.
+// NewSyslogAppenderToAddress create syslog appender, to a log daemon connected by network address.
 func NewSyslogAppenderToAddress(network string, address string, tag string) (Appender, error) {
 	log, err := syslog.Dial(network, address, syslog.LOG_INFO|syslog.LOG_LOCAL0, tag)
 	if err != nil {
@@ -66,6 +66,7 @@ func (sa *SyslogAppender) SetLevelMap(levelMap map[Level]syslog.Priority) {
 	sa.levelMap = levelMap
 }
 
+// Append write one log entry to syslog
 func (sa *SyslogAppender) Append(name string, level Level, data []byte) error {
 	if priority, ok := sa.levelMap[level]; ok {
 		switch priority {
@@ -94,6 +95,7 @@ func (sa *SyslogAppender) Append(name string, level Level, data []byte) error {
 	return err
 }
 
+// Transformer always return the default, non-
 func (sa *SyslogAppender) Transformer() Transformer {
 	return sa.transformer
 }

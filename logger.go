@@ -1,30 +1,31 @@
 package vlog
 
 import (
-	"sync/atomic"
-	"unsafe"
-	"strings"
-	"time"
 	"fmt"
+	"strings"
+	"sync/atomic"
+	"time"
+	"unsafe"
 )
 
-var loggerLocked int32 = 0
+var loggerLocked int32
 
-// unlock logger, so later modifications to loggers will take effect
+// UnfreezeLoggerSetting unlock logger, so later modifications to loggers will take effect
 func UnfreezeLoggerSetting() {
 	atomic.StoreInt32(&loggerLocked, 0)
 }
 
-// lock logger, so all modifications to loggers will not take effect
+// FreezeLoggerSetting lock logger, so all modifications to loggers will not take effect
 func FreezeLoggerSetting() {
 	atomic.StoreInt32(&loggerLocked, 1)
 }
 
-// if return true, all modifications to loggers will not take effect
+// LoggerSettingFroze if return true, all modifications to loggers will not take effect
 func LoggerSettingFroze() bool {
 	return atomic.LoadInt32(&loggerLocked) == 1
 }
 
+// Level the logger level
 type Level int32
 
 var levelNames = map[Level]string{
@@ -46,6 +47,7 @@ func reverseLevelNames(levelNames map[Level]string) map[string]Level {
 	return m
 }
 
+// Name return the name of level, using captical form
 func (l Level) Name() string {
 	return levelNames[l]
 }
@@ -62,18 +64,19 @@ const (
 	DefaultLevel Level = Info
 )
 
+// Logger the logger
 type Logger struct {
 	name      string
 	level     int32          //Level
 	appenders unsafe.Pointer //*[]Appender
 }
 
-// the name of this logger
+// Name the name of this logger
 func (l *Logger) Name() string {
 	return l.name
 }
 
-// set new Level to this logger. the default log level is Debug
+// SetLevel set new Level to this logger. the default log level is Debug
 func (l *Logger) SetLevel(level Level) {
 	if LoggerSettingFroze() {
 		return
@@ -81,12 +84,12 @@ func (l *Logger) SetLevel(level Level) {
 	atomic.StoreInt32(&l.level, int32(level))
 }
 
-// current level of this logger
+// Level current level of this logger
 func (l *Logger) Level() Level {
 	return Level(atomic.LoadInt32(&l.level))
 }
 
-// Set appender for this logger
+// SetAppenders set appender for this logger
 func (l *Logger) SetAppenders(appender []Appender) {
 	if LoggerSettingFroze() {
 		return
@@ -94,12 +97,12 @@ func (l *Logger) SetAppenders(appender []Appender) {
 	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appender))
 }
 
-// The appenders this logger have
+// Appenders return the appenders this logger have
 func (l *Logger) Appenders() []Appender {
 	return *(*[]Appender)(atomic.LoadPointer(&l.appenders))
 }
 
-// Add one new appender to logger
+// AddAppender add one new appender to logger
 func (l *Logger) AddAppender(appender Appender) {
 	if LoggerSettingFroze() {
 		return
@@ -116,29 +119,29 @@ func (l *Logger) AddAppender(appender Appender) {
 	}
 }
 
-// Set transformer, apply to all appenders the logger current have
+// SetTransformerForAppenders set transformer, apply to all appenders the logger current have
 func (l *Logger) SetTransformerForAppenders(transformer Transformer) {
 	for _, appender := range l.Appenders() {
 		appender.SetTransformer(transformer)
 	}
 }
 
-// log message with trace level
+// Trace log message with trace level
 func (l *Logger) Trace(message string, args ...interface{}) error {
 	return l.log(Trace, message, args...)
 }
 
-// log message with debug level
+// Debug log message with debug level
 func (l *Logger) Debug(message string, args ...interface{}) error {
 	return l.log(Debug, message, args...)
 }
 
-// log message with info level
+// Info log message with info level
 func (l *Logger) Info(message string, args ...interface{}) error {
 	return l.log(Info, message, args...)
 }
 
-// log message with warn level
+// Warn log message with warn level
 func (l *Logger) Warn(message string, args ...interface{}) error {
 	return l.log(Warn, message, args...)
 }
@@ -148,37 +151,37 @@ func (l *Logger) Error(message string, args ...interface{}) error {
 	return l.log(Error, message, args...)
 }
 
-// log message with critical level
+// Critical log message with critical level
 func (l *Logger) Critical(message string, args ...interface{}) error {
 	return l.log(Critical, message, args...)
 }
 
-// if this logger log trace message
+// IsTraceEnable if this logger log trace message
 func (l *Logger) IsTraceEnable() bool {
 	return l.Level() <= Trace
 }
 
-// if this logger log debug message
+// IsDebugEnable if this logger log debug message
 func (l *Logger) IsDebugEnable() bool {
 	return l.Level() <= Debug
 }
 
-// if this logger log info message
+// IsInfoEnable if this logger log info message
 func (l *Logger) IsInfoEnable() bool {
 	return l.Level() <= Info
 }
 
-// if this logger log warn level message
+// IsWarnEnable if this logger log warn level message
 func (l *Logger) IsWarnEnable() bool {
 	return l.Level() <= Warn
 }
 
-// if this logger log error message
+// IsErrorEnable if this logger log error message
 func (l *Logger) IsErrorEnable() bool {
 	return l.Level() <= Error
 }
 
-// if this logger log critical message
+// IsCriticalEnable if this logger log critical message
 func (l *Logger) IsCriticalEnable() bool {
 	return l.Level() <= Critical
 }
@@ -215,7 +218,7 @@ func formatMessage(message string, args ...interface{}) string {
 		}
 	}
 
-	for idx := len(items) - 1; idx < argNum; idx += 1 {
+	for idx := len(items) - 1; idx < argNum; idx++ {
 		results = append(results, " ")
 		results = append(results, formatArg(args[idx]))
 	}
@@ -227,12 +230,12 @@ func formatArg(arg interface{}) string {
 	return fmt.Sprintf("%v", arg)
 }
 
-// create new logger, with name and
+// GetLogger return the logger with name
 func GetLogger(name string) *Logger {
 	return loggerCache.Load(name)
 }
 
-// return the log of current package, use package name as logger name
+// CurrentPackageLogger return the log of current package, use package name as logger name
 func CurrentPackageLogger() *Logger {
 	caller := getCaller(2)
 	return GetLogger(caller.packageName)

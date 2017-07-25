@@ -1,19 +1,19 @@
 package vlog
 
 import (
-	"os"
-	"time"
-	"path/filepath"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 	"unsafe"
-	"fmt"
-	"strconv"
-	"errors"
 )
 
-// Appender that write log to local file
+// FileAppender appender that write log to local file
 type FileAppender struct {
 	*CanFormattedMixin
 	path    string
@@ -24,7 +24,7 @@ type FileAppender struct {
 
 var _ Appender = (*FileAppender)(nil)
 
-// create new file appender.
+// NewFileAppender create new file appender.
 // path is the base path and filename of log file.
 // appender can be nil, then the file would not be rotated.
 func NewFileAppender(path string, rotater Rotater) (*FileAppender, error) {
@@ -52,6 +52,7 @@ func NewFileAppender(path string, rotater Rotater) (*FileAppender, error) {
 	}, nil
 }
 
+// Append append new log to file
 func (f *FileAppender) Append(name string, level Level, data []byte) error {
 	if f.rotater != nil {
 		shouldRotate, suffix := f.rotater.Check(time.Now(), len(data), 1)
@@ -127,6 +128,7 @@ func getLogSuffixed(path string) []string {
 	return suffixes
 }
 
+// Rotater interface for log rotate
 type Rotater interface {
 	// tell rotater init log file status, so rotater can determine when and how to do next rotate.
 	// param lastModify is the modify time of last logfile
@@ -141,24 +143,24 @@ type Rotater interface {
 	Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string)
 }
 
-// Rotate log file by time
+// TimeRotater rotate log file by time
 type TimeRotater struct {
 	duration     time.Duration
 	suffixFormat string
 	last         unsafe.Pointer // *time.Time
 }
 
-// create rotater rotate log by time
+// NewTimeRotater create rotater rotate log by time
 func NewTimeRotater(duration time.Duration, suffixFormat string) Rotater {
 	return &TimeRotater{duration: duration, suffixFormat: suffixFormat}
 }
 
-// create rotater rotate log every hour
+// NewHourlyRotater create rotater rotate log every hour
 func NewHourlyRotater(pattern string) Rotater {
 	return NewTimeRotater(time.Hour, pattern)
 }
 
-// create rotater rotate log every day
+// NewDailyRotater create rotater rotate log every day
 func NewDailyRotater(pattern string) Rotater {
 	return NewTimeRotater(time.Hour*24, pattern)
 }
@@ -175,6 +177,7 @@ func (t *TimeRotater) casLastTime(oldTime *time.Time, ts *time.Time) bool {
 	return atomic.CompareAndSwapPointer(&t.last, unsafe.Pointer(oldTime), unsafe.Pointer(ts))
 }
 
+// Check if should rotate now
 func (t *TimeRotater) Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string) {
 	intervalSeconds := int64(t.duration / time.Second)
 	last := t.lastTime()
@@ -193,7 +196,7 @@ func (t *TimeRotater) setInitStatus(lastModify time.Time, size int64, suffixes [
 	t.setLastTime(&lastModify)
 }
 
-// rotate based on file size
+// SizeRotater rotate based on file size
 type SizeRotater struct {
 	rotateSize  int64
 	size        int64
@@ -201,7 +204,7 @@ type SizeRotater struct {
 	SuffixWidth int
 }
 
-// create file size rotater, rotate log file when file size larger than rotateSize, in bytes
+// NewSizeRotater create file size rotater, rotate log file when file size larger than rotateSize, in bytes
 func NewSizeRotater(rotateSize int64, suffixWidth int) Rotater {
 	return &SizeRotater{rotateSize: rotateSize, SuffixWidth: suffixWidth}
 }
@@ -219,6 +222,7 @@ func (sr *SizeRotater) setInitStatus(lastModify time.Time, size int64, suffixes 
 	sr.setSeq(int64(maxSeq))
 }
 
+// Check if should rotate now
 func (sr *SizeRotater) Check(timestamp time.Time, bytes int, records int) (shouldRotate bool, suffixName string) {
 	size := sr.addSize(int64(bytes))
 	if size < sr.rotateSize {
