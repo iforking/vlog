@@ -1,6 +1,25 @@
 The Very Log lib for golang
 
-## Get logger
+Table of Contents
+=================
+
+* [Add Dependency](#add-dependency)
+* [Get Logger](#get-logger)
+* [Log Message](#log-message)
+* [Setting By Code](#setting-by-code)
+* [FileAppender Log Rotate](#fileappender-log-rotate)
+* [Setting By Config File](#setting-by-config-file)
+* [Appenders](#appenders)
+* [Rotaters](#rotaters)
+* [Transformers](#transformers)
+
+## Add Dependency
+
+```sh
+go get github.com:clearthesky/vlog
+```
+
+## Get Logger
 
 Each logger has a name, there is only one logger for same name. You can pass a name, or just using current package name as logger name:
 
@@ -9,7 +28,7 @@ var logger = vlog.GetLogger(loggerName) // specify a logger name
 var logger = vlog.CurrentPackageLogger() // using full package name as logger name
 ```
 
-## Log message
+## Log Message
 
 Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
 Log methods can use format string to format params, if has more params than placeholders, the remain params will be output after formatted string.
@@ -30,7 +49,7 @@ if logger.IsDebugEnable() {
 }
 ```
 
-## Setting by code
+## Setting By Code
 
 By default, logger only output message with info level or above, using default message format, to standard output.
 To change this, set custom Appender/Level/Transformer to the logger.
@@ -50,7 +69,7 @@ func init() {
 }
 ```
 
-## FileAppender log rotate
+## FileAppender Log Rotate
 
 If using FileAppender to write log into file, a log rotater can be set to rotate log file, by log file size or time.
 
@@ -65,7 +84,7 @@ rotater := vlog.NewDailyRotater("20060102")
 appender := vlog.NewFileAppender("path/to/logfile", rotater)
 ```
 
-## Setting by config file
+## Setting By Config File
 
 Loggers can also be set by a xml format config file.
 If a config file is used, all settings by code will not take effect, vlog only obey the config file.
@@ -125,4 +144,5 @@ Below variables can be used in PatternTransformer format string:
 Use {{ to escape  {, use }} to escape }
 
 {time} can set custom format via filter, by {time|2006-01-02 15:04:05.000}
+
 
