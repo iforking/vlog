@@ -89,12 +89,12 @@ func (l *Logger) Level() Level {
 	return Level(atomic.LoadInt32(&l.level))
 }
 
-// SetAppenders set appender for this logger
-func (l *Logger) SetAppenders(appender []Appender) {
+// SetAppenders set one or multi appenders for this logger
+func (l *Logger) SetAppenders(appenders ...Appender) {
 	if LoggerSettingFroze() {
 		return
 	}
-	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appender))
+	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appenders))
 }
 
 // Appenders return the appenders this logger have
@@ -103,16 +103,20 @@ func (l *Logger) Appenders() []Appender {
 }
 
 // AddAppender add one new appender to logger
-func (l *Logger) AddAppender(appender Appender) {
+func (l *Logger) AddAppenders(appenders ...Appender) {
 	if LoggerSettingFroze() {
 		return
 	}
+	if len(appenders) == 0 {
+		return
+	}
+
 	for {
 		p := atomic.LoadPointer(&l.appenders)
-		appenders := *(*[]Appender)(p)
-		newAppenders := make([]Appender, len(appenders)+1)
-		copy(newAppenders, appenders)
-		newAppenders[len(appenders)] = appender
+		originAppenders := *(*[]Appender)(p)
+		newAppenders := make([]Appender, len(originAppenders)+len(appenders))
+		copy(newAppenders, originAppenders)
+		copy(newAppenders[len(originAppenders):], appenders)
 		if atomic.CompareAndSwapPointer(&l.appenders, p, unsafe.Pointer(&newAppenders)) {
 			break
 		}

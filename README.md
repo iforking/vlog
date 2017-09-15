@@ -3,7 +3,6 @@ The Very Log lib for golang
 Table of Contents
 =================
 
-* [Add Dependency](#add-dependency)
 * [Get Logger](#get-logger)
 * [Log Message](#log-message)
 * [Setting By Code](#setting-by-code)
@@ -12,12 +11,6 @@ Table of Contents
 * [Appenders](#appenders)
 * [Rotaters](#rotaters)
 * [Transformers](#transformers)
-
-## Add Dependency
-
-```sh
-go get github.com:clearthesky/vlog
-```
 
 ## Get Logger
 
@@ -63,7 +56,7 @@ func init() {
 	transformer, _ := vlog.NewPatternTransformer("{time} [{Level}] {file}:{line} - {message}\n")
 	appender.SetTransformer(transformer)
 	// using custom appender
-	logger.SetAppenders([]vlog.Appender{appender})
+	logger.SetAppenders(appender)
 	// set level to debug, will output all message with level equal or higher than Debug
 	logger.SetLevel(vlog.Debug)
 }

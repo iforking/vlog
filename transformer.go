@@ -50,6 +50,17 @@ type patternItem struct {
 	filter string // the filter
 }
 
+// MustNewPatternTransformer create new pattern transformer, just as NewPatternTransformer do.
+// But when an error occurred, MustNewPatternTransformer panic while NewPatternTransformer return the error.
+func MustNewPatternTransformer(pattern string) *PatternTransformer {
+	t, err := NewPatternTransformer(pattern)
+	if err != nil {
+		panic(err)
+	}
+
+	return t
+}
+
 // NewPatternTransformer create new pattern transformer
 // below variables can be used in format string:
 // {file} filename
