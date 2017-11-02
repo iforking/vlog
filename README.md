@@ -16,7 +16,7 @@ Table of Contents
 ## Add Dependency
 
 ```sh
-go get github.com:clearthesky/vlog
+go get github.com/hsiafan/vlog
 ```
 
 ## Get Logger
