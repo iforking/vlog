@@ -12,6 +12,22 @@ Table of Contents
 * [Rotaters](#rotaters)
 * [Transformers](#transformers)
 
+## Add Dependency
+
+Go get:
+
+```sh
+go get github.com/hsiafan/vlog
+```
+
+If use go dep, add constraint to Gopkg.toml:
+
+```toml
+[[constraint]]
+  name = "github.com/clearthesky/vlog"
+  version = "0.2.0"
+```
+
 ## Get Logger
 
 Each logger has a name, there is only one logger for same name. You can pass a name, or just using current package name as logger name:
