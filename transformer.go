@@ -84,8 +84,8 @@ func NewPatternTransformer(pattern string) (*PatternTransformer, error) {
 	)
 
 	state := normalState
-	buffer := []rune{}
-	items := []patternItem{}
+	var buffer []rune
+	var items []patternItem
 	for idx, r := range []rune(pattern) {
 		switch state {
 		case normalState:
@@ -187,7 +187,7 @@ func NewDefaultPatternTransformer() *PatternTransformer {
 // Transform format log data to byte array data
 func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string) []byte {
 
-	logItems := []string{}
+	var logItems []string
 	var caller *caller
 	depth := 4
 	for _, item := range f.items {

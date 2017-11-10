@@ -185,7 +185,7 @@ func (lc *LoggerCache) matchConfig(name string) *LoggerConfig {
 }
 
 func (lc *LoggerCache) filter(prefix string) []*Logger {
-	loggers := []*Logger{}
+	var loggers []*Logger
 	for _, logger := range lc.loggerMap {
 		if matchPrefix(logger.Name(), prefix) {
 			loggers = append(loggers, logger)
@@ -213,7 +213,7 @@ func matchPrefix(name string, prefix string) bool {
 	return false
 }
 
-// LoggerConfig usded to config logger level and appenders
+// LoggerConfig used to config logger level and appenders
 type LoggerConfig struct {
 	prefix    string
 	level     Level

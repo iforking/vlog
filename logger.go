@@ -214,7 +214,7 @@ func formatMessage(message string, args ...interface{}) string {
 	argNum := len(args)
 	items := strings.SplitN(message, "{}", argNum+1)
 
-	results := []string{}
+	var results []string
 	for idx, item := range items {
 		results = append(results, item)
 		if idx >= 0 && idx < len(items)-1 && idx < argNum {
