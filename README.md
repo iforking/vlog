@@ -24,7 +24,7 @@ If use go dep, add constraint to Gopkg.toml:
 
 ```toml
 [[constraint]]
-  name = "github.com/clearthesky/vlog"
+  name = "github.com/hsiafan/vlog"
   version = "0.2.0"
 ```
 
