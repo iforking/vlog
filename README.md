@@ -8,9 +8,10 @@ Table of Contents
 * [Setting By Code](#setting-by-code)
 * [Log Rotate](#log-rotate)
 * [Setting Level By Environ](#setting-level-by-environ)
-* [Appenders](#appenders)
-* [Rotaters](#rotaters)
-* [Transformers](#transformers)
+* [Appendix](#appendix)
+    * [Appenders](#appenders)
+    * [Rotaters](#rotaters)
+    * [Transformers](#transformers)
 
 ## Add Dependency
 
@@ -108,7 +109,9 @@ export VLOG_LEVEL="package1=Warn;github.com/user1=Debug"
 If use package path as logger name, vlog will match the setting by prefix. It means github.com/user1=Debug will take effect
 for logger with name github.com/user1/lib.
 
-## Appenders
+## Appendix
+
+### Appenders
 
 Appenders supportted now:
 
@@ -120,7 +123,7 @@ Appenders supportted now:
 | SyslogAppender | SyslogAppender |
 | NopAppender | NewNopAppender |
 
-## Rotaters
+### Rotaters
 
 | Rotater Type | Create by Code |
 | :------: | :------: |
@@ -129,7 +132,7 @@ Appenders supportted now:
 | TimeRotater | NewTimeRotater |
 | SizeRotater | NewSizeRotater |
 
-## Transformers
+### Transformers
 
 | Transformer Type | Create by Code |
 | :------: | :------: |
