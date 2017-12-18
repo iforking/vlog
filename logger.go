@@ -8,23 +8,6 @@ import (
 	"unsafe"
 )
 
-var loggerLocked int32
-
-// UnfreezeLoggerSetting unlock logger, so later modifications to loggers will take effect
-func UnfreezeLoggerSetting() {
-	atomic.StoreInt32(&loggerLocked, 0)
-}
-
-// FreezeLoggerSetting lock logger, so all modifications to loggers will not take effect
-func FreezeLoggerSetting() {
-	atomic.StoreInt32(&loggerLocked, 1)
-}
-
-// LoggerSettingFroze if return true, all modifications to loggers will not take effect
-func LoggerSettingFroze() bool {
-	return atomic.LoadInt32(&loggerLocked) == 1
-}
-
 // Level the logger level
 type Level int32
 
@@ -35,16 +18,6 @@ var levelNames = map[Level]string{
 	Warn:     "Warn",
 	Error:    "Error",
 	Critical: "Critical",
-}
-
-var levelNamesReverse = reverseLevelNames(levelNames)
-
-func reverseLevelNames(levelNames map[Level]string) map[string]Level {
-	var m = map[string]Level{}
-	for level, str := range levelNames {
-		m[strings.ToUpper(str)] = level
-	}
-	return m
 }
 
 // Name return the name of level, using captical form
@@ -69,6 +42,7 @@ type Logger struct {
 	name      string
 	level     int32          //Level
 	appenders unsafe.Pointer //*[]Appender
+	frozen    bool           // frozen level. the level is set by env, following level set in code will not take effect
 }
 
 // Name the name of this logger
@@ -78,7 +52,7 @@ func (l *Logger) Name() string {
 
 // SetLevel set new Level to this logger. the default log level is Debug
 func (l *Logger) SetLevel(level Level) {
-	if LoggerSettingFroze() {
+	if l.frozen {
 		return
 	}
 	atomic.StoreInt32(&l.level, int32(level))
@@ -91,9 +65,6 @@ func (l *Logger) Level() Level {
 
 // SetAppenders set one or multi appenders for this logger
 func (l *Logger) SetAppenders(appenders ...Appender) {
-	if LoggerSettingFroze() {
-		return
-	}
 	atomic.StorePointer(&l.appenders, unsafe.Pointer(&appenders))
 }
 
@@ -104,9 +75,6 @@ func (l *Logger) Appenders() []Appender {
 
 // AddAppender add one new appender to logger
 func (l *Logger) AddAppenders(appenders ...Appender) {
-	if LoggerSettingFroze() {
-		return
-	}
 	if len(appenders) == 0 {
 		return
 	}

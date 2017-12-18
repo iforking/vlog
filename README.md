@@ -93,51 +93,47 @@ rotater := vlog.NewDailyRotater("20060102")
 appender := vlog.NewFileAppender("path/to/logfile", rotater)
 ```
 
-## Setting By Config File
+## Setting Level By Environ
 
-Loggers can also be set by a xml format config file.
-If a config file is used, all settings by code will not take effect, vlog only obey the config file.
-So you can set logger by code in your final or in your lib in development.
-When final routine is deployed, you can use a config file to meet your real need.
+Loggers' level can be set by one environ: VLOG_LEVEL. The level set by environ will override the level set in code.
+So you can set logger by code in your final or in your lib in development,
+when final routine is deployed, you can set the environ meet your real need.
 
-Vlog will load config file from path "vlog.xml" by default.
-To use a different path, set env VLOG_CONFIG_FILE to you path, before start the routine.
+For example, run program in linux shell, you can set as follows:
 
-Note that the logger config select logger by name segment prefix, separated by "/".
-If having multi logger config matched, A Logger will use logger config that have the longest prefix.
-This means a logger setting named with "github.com/user1" will apply to
-loggers with name "github.com/user1", "github.com/user1/project1",
-but not affect loggers with name "github.com/user2", "github.com/user123", or "github.com/user".
-The logger setting with name "" will apply to all loggers, except logger be config by other logger setting.
+```bash
+export VLOG_LEVEL="package1=Warn;github.com/user1=Debug"
+```
 
-Click to see a [sample config file](https://raw.githubusercontent.com/clearthesky/vlog/master/vlog_sample.xml).
+If use package path as logger name, vlog will match the setting by prefix. It means github.com/user1=Debug will take effect
+for logger with name github.com/user1/lib.
 
 ## Appenders
 
 Appenders supportted now:
 
-| Appender Type | Create by Code | Name in Config File |
-| :------: | :------: | :------: |
-| ConsoleAppender | NewConsoleAppender | ConsoleAppender |
-| ConsoleAppender | NewConsole2Appender | Console2Appender |
-| FileAppender | NewFileAppender | FileAppender |
-| SyslogAppender | SyslogAppender | SyslogAppender |
-| NopAppender | NewNopAppender | NopAppender |
+| Appender Type | Create by Code |
+| :------: | :------: |
+| ConsoleAppender | NewConsoleAppender |
+| ConsoleAppender | NewConsole2Appender |
+| FileAppender | NewFileAppender |
+| SyslogAppender | SyslogAppender |
+| NopAppender | NewNopAppender |
 
 ## Rotaters
 
-| Rotater Type | Create by Code | Name in Config File |
-| :------: | :------: | :------: |
-| TimeRotater | NewDailyRotater | DailyRotater |
-| TimeRotater | NewHourlyRotater | HourlyRotater |
-| TimeRotater | NewTimeRotater | - |
-| SizeRotater | NewSizeRotater | SizeRotater |
+| Rotater Type | Create by Code |
+| :------: | :------: |
+| TimeRotater | NewDailyRotater |
+| TimeRotater | NewHourlyRotater |
+| TimeRotater | NewTimeRotater |
+| SizeRotater | NewSizeRotater |
 
 ## Transformers
 
-| Transformer Type | Create by Code | Name in Config File |
-| :------: | :------: | :------: |
-| PatternTransformer | NewPatternTransformer | PatternTransformer |
+| Transformer Type | Create by Code |
+| :------: | :------: |
+| PatternTransformer | NewPatternTransformer |
 
 Below variables can be used in PatternTransformer format string:
 

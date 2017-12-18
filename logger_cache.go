@@ -1,144 +1,64 @@
 package vlog
 
 import (
-	"errors"
-	"os"
-	"strings"
 	"sync"
 	"unsafe"
+	"os"
+	"strings"
 )
 
 var loggerCache = initLogCache()
 
-func initLogCache() *LoggerCache {
-	configPath := os.Getenv("VLOG_CONFIG_FILE")
-	if configPath == "" {
-		configPath = "vlog.xml"
-	}
-	info, err := os.Stat(configPath)
-	if err != nil || info.IsDir() {
-		// no log config file
-		return newDefaultLogCache()
-	}
-	root, err := loadXMLConfig(configPath)
-	if err != nil {
-		panic(wrapError("load vlog config file error", err))
-	}
+var levelNamesMap = reverseLevelNames(levelNames)
 
-	cache, err := createFromConfig(root)
-	if err != nil {
-		panic(wrapError("parse vlog config file error", err))
+func reverseLevelNames(levelNames map[Level]string) map[string]Level {
+	var m = map[string]Level{}
+	for level, str := range levelNames {
+		m[strings.ToUpper(str)] = level
 	}
-	FreezeLoggerSetting()
+	return m
+}
+
+// create unique global log cache
+func initLogCache() *LoggerCache {
+	cache := newLogCache()
 	return cache
 }
 
-func createFromConfig(root *rootElement) (*LoggerCache, error) {
-	var transformerMap = map[string]Transformer{}
-	for _, e := range root.TransformerElements.TransformerElements {
-		if e.Name == "" {
-			return nil, errors.New("transformer name not set")
-		}
-		if _, ok := transformerMap[e.Name]; ok {
-			return nil, errors.New("transformer " + e.Name + " already defined")
-		}
-		if e.Type == "" {
-			return nil, errors.New("transformer type not set, name:" + e.Name)
-		}
-		builder, ok := builderRegistry.GetTransformerBuilder(e.Type)
-		if !ok {
-			return nil, errors.New("unknown transformer type:" + e.Type)
-		}
-		transformer, err := builder(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
-		if err != nil {
-			return nil, wrapError("build transformer from config error", err)
-		}
-		transformerMap[e.Name] = transformer
-	}
-
-	var appenderMap = map[string]Appender{}
-	for _, e := range root.AppenderElements.AppenderElements {
-		if e.Name == "" {
-			return nil, errors.New("appender name not set")
-		}
-		if _, ok := appenderMap[e.Name]; ok {
-			return nil, errors.New("appender " + e.Name + " already defined")
-		}
-		if e.Type == "" {
-			return nil, errors.New("appender " + e.Name + " type not set")
-		}
-		builder, ok := builderRegistry.GetAppenderBuilder(e.Type)
-		if !ok {
-			return nil, errors.New("unknown appender type: " + e.Type)
-		}
-		appender, err := builder(concatBytes([]byte("<root>"), e.InnerXML, []byte("</root>")))
-		if err != nil {
-			return nil, wrapError("build appender from config error", err)
-		}
-
-		var transformer Transformer
-		if e.TransformerName == "" {
-			transformer = DefaultTransformer()
-		} else {
-			if t, ok := transformerMap[e.TransformerName]; !ok {
-				return nil, errors.New("transformer " + e.TransformerName + " not exists")
-			} else {
-				transformer = t
+func newLogCache() *LoggerCache {
+	var loggerConfigs []*loggerConfig
+	var levelStr = os.Getenv("VLOG_LEVEL")
+	if len(levelStr) > 0 {
+		for _, levelPair := range strings.Split(levelStr, ";") {
+			levelPair = strings.TrimSpace(levelPair)
+			if len(levelPair) == 0 {
+				continue
 			}
-		}
-		appender.SetTransformer(transformer)
-		appenderMap[e.Name] = appender
-	}
-
-	var loggers = map[string]bool{}
-	var logConfigs []*LoggerConfig
-	var rootConfig = &LoggerConfig{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}
-	for _, e := range root.LoggerElements {
-		if loggers[e.Name] {
-			return nil, errors.New("logger " + e.Name + " already defined")
-		}
-		if e.Level == "" {
-			return nil, errors.New("logger " + e.Name + " level not set")
-		}
-		level, ok := levelNamesReverse[strings.ToUpper(e.Level)]
-		if !ok {
-			return nil, errors.New("unknown level " + e.Level + " for log " + e.Name)
-		}
-		if len(e.AppenderRefs) == 0 {
-			return nil, errors.New("logger " + e.Name + " appenders not set")
-		}
-		var appenders []Appender
-		for _, ar := range e.AppenderRefs {
-			appender, ok := appenderMap[ar.Name]
+			var idx = strings.IndexByte(levelPair, byte('='))
+			if idx == -1 {
+				continue
+			}
+			var prefix = strings.TrimSpace(levelPair[:idx])
+			if len(prefix) == 0 {
+				continue
+			}
+			var level, ok = levelNamesMap[strings.ToUpper(strings.TrimSpace(levelPair[idx+1:]))]
 			if !ok {
-				return nil, errors.New("appender " + ar.Name + " not found for logger " + e.Name)
+				continue
 			}
-			appenders = append(appenders, appender)
-		}
-		if e.Name == "" {
-			rootConfig = &LoggerConfig{prefix: e.Name, level: level, appenders: appenders}
-		} else {
-			logConfigs = append(logConfigs, &LoggerConfig{prefix: e.Name, level: level, appenders: appenders})
+			loggerConfigs = append(loggerConfigs, &loggerConfig{prefix: prefix, level: level})
 		}
 	}
-	logConfigs = append(logConfigs, rootConfig)
 
 	return &LoggerCache{
 		loggerMap:  make(map[string]*Logger),
-		logConfigs: logConfigs,
-	}, nil
-}
-
-func newDefaultLogCache() *LoggerCache {
-	return &LoggerCache{
-		loggerMap:  make(map[string]*Logger),
-		logConfigs: []*LoggerConfig{{prefix: "", level: DefaultLevel, appenders: []Appender{DefaultAppender()}}},
+		logConfigs: loggerConfigs,
 	}
 }
 
-// LoggerCache contais loggers with name as key
+// LoggerCache contains loggers with name as key
 type LoggerCache struct {
-	logConfigs []*LoggerConfig
+	logConfigs []*loggerConfig
 	loggerMap  map[string]*Logger
 	lock       sync.Mutex
 }
@@ -152,26 +72,28 @@ func (lc *LoggerCache) Load(name string) *Logger {
 		return logger
 	}
 
-	logger, ok = lc.loggerMap[name]
-	if ok {
-		return logger
+	var level = DefaultLevel
+	var frozen = false
+	logConfig := lc.matchConfig(name)
+	if logConfig != nil {
+		level = logConfig.level
+		frozen = true
 	}
 
-	logConfig := lc.matchConfig(name)
-
-	appenders := &logConfig.appenders
+	appenders := &[]Appender{NewConsole2Appender()}
 	logger = &Logger{
 		name:      name,
-		level:     int32(logConfig.level),
+		level:     int32(level),
 		appenders: unsafe.Pointer(appenders),
+		frozen:    frozen,
 	}
 	lc.loggerMap[name] = logger
 	return logger
 }
 
-func (lc *LoggerCache) matchConfig(name string) *LoggerConfig {
+func (lc *LoggerCache) matchConfig(name string) *loggerConfig {
 	var maxMatchLen = 0
-	var config *LoggerConfig
+	var config *loggerConfig
 	for _, logConfig := range lc.logConfigs {
 		if matchPrefix(name, logConfig.prefix) {
 			matchLen := len(logConfig.prefix)
@@ -213,9 +135,8 @@ func matchPrefix(name string, prefix string) bool {
 	return false
 }
 
-// LoggerConfig used to config logger level and appenders
-type LoggerConfig struct {
-	prefix    string
-	level     Level
-	appenders []Appender
+// loggerConfig used to config logger levels
+type loggerConfig struct {
+	prefix string
+	level  Level
 }

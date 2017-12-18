@@ -7,7 +7,7 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	logCache := newDefaultLogCache()
+	logCache := newLogCache()
 	logger1 := logCache.Load("logger1")
 	logger2 := logCache.Load("logger2")
 	logger3 := logCache.Load("logger1")
@@ -17,7 +17,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoggerCache_Filter(t *testing.T) {
-	logCache := newDefaultLogCache()
+	logCache := newLogCache()
 	_ = logCache.Load("package0")
 	_ = logCache.Load("package1")
 	_ = logCache.Load("gopkg.in/package1")
@@ -41,9 +41,8 @@ func TestLoggerCache_Filter(t *testing.T) {
 
 func TestCache_SetPrefix(t *testing.T) {
 	defer os.RemoveAll("logs/")
-	defer os.Unsetenv("VLOG_CONFIG_FILE")
-	defer UnfreezeLoggerSetting()
-	os.Setenv("VLOG_CONFIG_FILE", "vlog_sample.xml")
+	defer os.Unsetenv("VLOG_LEVEL")
+	os.Setenv("VLOG_LEVEL", "package1=Warn;github.com/user1=debug")
 	logCache := initLogCache()
 	logger1 := logCache.Load("package1")
 	logger2 := logCache.Load("gopkg.in/package1")
