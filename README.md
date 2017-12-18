@@ -7,7 +7,7 @@ Table of Contents
 * [Log Message](#log-message)
 * [Setting By Code](#setting-by-code)
 * [FileAppender Log Rotate](#fileappender-log-rotate)
-* [Setting By Config File](#setting-by-config-file)
+* [Setting Level By Environ](#setting-level-by-environ)
 * [Appenders](#appenders)
 * [Rotaters](#rotaters)
 * [Transformers](#transformers)
@@ -25,7 +25,7 @@ If use go dep, add constraint to Gopkg.toml:
 ```toml
 [[constraint]]
   name = "github.com/hsiafan/vlog"
-  version = "0.2.0"
+  version = "0.3.0"
 ```
 
 ## Get Logger
