@@ -6,7 +6,7 @@ Table of Contents
 * [Get Logger](#get-logger)
 * [Log Message](#log-message)
 * [Setting By Code](#setting-by-code)
-* [FileAppender Log Rotate](#fileappender-log-rotate)
+* [Log Rotate](#log-rotate)
 * [Setting Level By Environ](#setting-level-by-environ)
 * [Appenders](#appenders)
 * [Rotaters](#rotaters)
@@ -78,7 +78,7 @@ func init() {
 }
 ```
 
-## FileAppender Log Rotate
+## Log Rotate
 
 If using FileAppender to write log into file, a log rotater can be set to rotate log file, by log file size or time.
 
