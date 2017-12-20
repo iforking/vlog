@@ -3,14 +3,17 @@ The Very Log lib for golang
 Table of Contents
 =================
 
-* [Get Logger](#get-logger)
-* [Log Message](#log-message)
-* [Setting By Code](#setting-by-code)
-* [FileAppender Log Rotate](#fileappender-log-rotate)
-* [Setting By Config File](#setting-by-config-file)
-* [Appenders](#appenders)
-* [Rotaters](#rotaters)
-* [Transformers](#transformers)
+* [Add Dependency](#add-dependency)
+* [Usage](#usage)
+    * [Get Logger](#get-logger)
+    * [Log Message](#log-message)
+    * [Logger Setting](#logger-setting)
+    * [Log Rotate](#log-rotate)
+    * [Override Log Levels](#override-log-levels)
+* [Appendix](#appendix)
+    * [Appenders](#appenders)
+    * [Rotaters](#rotaters)
+    * [Transformers](#transformers)
 
 ## Add Dependency
 
@@ -25,10 +28,12 @@ If use go dep, add constraint to Gopkg.toml:
 ```toml
 [[constraint]]
   name = "github.com/hsiafan/vlog"
-  version = "0.2.0"
+  version = "0.3.1"
 ```
 
-## Get Logger
+## Usage
+
+### Get Logger
 
 Each logger has a name, there is only one logger for same name. You can pass a name, or just using current package name as logger name:
 
@@ -37,7 +42,7 @@ var logger = vlog.GetLogger(loggerName) // specify a logger name
 var logger = vlog.CurrentPackageLogger() // using full package name as logger name
 ```
 
-## Log Message
+### Log Message
 
 Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
 Log methods can use format string to format params, if has more params than placeholders, the remain params will be output after formatted string.
@@ -58,7 +63,7 @@ if logger.IsDebugEnable() {
 }
 ```
 
-## Setting By Code
+### Logger Setting
 
 By default, logger only output message with info level or above, using default message format, to standard output.
 To change this, set custom Appender/Level/Transformer to the logger.
@@ -78,7 +83,7 @@ func init() {
 }
 ```
 
-## FileAppender Log Rotate
+### Log Rotate
 
 If using FileAppender to write log into file, a log rotater can be set to rotate log file, by log file size or time.
 
@@ -93,7 +98,7 @@ rotater := vlog.NewDailyRotater("20060102")
 appender := vlog.NewFileAppender("path/to/logfile", rotater)
 ```
 
-## Setting Level By Environ
+### Override Log Levels
 
 Loggers' level can be set by one environ: VLOG_LEVEL. The level set by environ will override the level set in code.
 So you can set logger by code in your final or in your lib in development,
@@ -108,9 +113,9 @@ export VLOG_LEVEL="package1=Warn;github.com/user1=Debug"
 If use package path as logger name, vlog will match the setting by prefix. It means github.com/user1=Debug will take effect
 for logger with name github.com/user1/lib.
 
-## Appenders
+## Appendix
 
-Appenders supportted now:
+### Appenders
 
 | Appender Type | Create by Code |
 | :------: | :------: |
@@ -120,7 +125,7 @@ Appenders supportted now:
 | SyslogAppender | SyslogAppender |
 | NopAppender | NewNopAppender |
 
-## Rotaters
+### Rotaters
 
 | Rotater Type | Create by Code |
 | :------: | :------: |
@@ -129,7 +134,7 @@ Appenders supportted now:
 | TimeRotater | NewTimeRotater |
 | SizeRotater | NewSizeRotater |
 
-## Transformers
+### Transformers
 
 | Transformer Type | Create by Code |
 | :------: | :------: |

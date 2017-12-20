@@ -80,7 +80,7 @@ func (lc *LoggerCache) Load(name string) *Logger {
 		frozen = true
 	}
 
-	appenders := &[]Appender{NewConsole2Appender()}
+	appenders := &[]Appender{defaultAppender}
 	logger = &Logger{
 		name:      name,
 		level:     int32(level),
