@@ -17,18 +17,18 @@ Table of Contents
 
 ## Add Dependency
 
-Go get:
+You can use vgo get:
 
 ```sh
-go get github.com/hsiafan/vlog
+vgo get github.com/hsiafan/vlog
 ```
 
-If use go dep, add constraint to Gopkg.toml:
+If using go dep, add constraint to Gopkg.toml:
 
 ```toml
 [[constraint]]
   name = "github.com/hsiafan/vlog"
-  version = "0.3.1"
+  version = "0.3.2"
 ```
 
 ## Usage

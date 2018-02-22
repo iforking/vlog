@@ -9,14 +9,14 @@ import (
 
 func TestLogger(t *testing.T) {
 	logger := CurrentPackageLogger()
-	assert.Equal(t, "github.com/clearthesky/vlog", logger.Name())
+	assert.Equal(t, "github.com/hsiafan/vlog", logger.Name())
 	assert.Equal(t, DefaultLevel, logger.Level())
 
 	appender := NewBytesAppender()
 	logger.SetAppenders(appender)
 	logger.Info("this is a test")
 	assert.True(t, strings.HasSuffix(appender.buffer.String(),
-		" [Info] github.com/clearthesky/vlog - this is a test\n"))
+		" [Info] github.com/hsiafan/vlog - this is a test\n"))
 
 	appender = NewBytesAppender()
 	transformer, _ := NewPatternTransformer("{time|2006-01-02} {package}/{file} - {message}\n")
@@ -24,7 +24,7 @@ func TestLogger(t *testing.T) {
 	logger.SetAppenders(appender)
 	logger.Info("this is a test")
 	date := time.Now().Format("2006-01-02")
-	assert.Equal(t, date+" github.com/clearthesky/vlog/logger_test.go - this is a test\n", appender.buffer.String())
+	assert.Equal(t, date+" github.com/hsiafan/vlog/logger_test.go - this is a test\n", appender.buffer.String())
 
 	logger2 := CurrentPackageLogger()
 	assert.Equal(t, logger, logger2)
