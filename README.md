@@ -3,7 +3,6 @@ The Very Log lib for golang
 Table of Contents
 =================
 
-* [Add Dependency](#add-dependency)
 * [Usage](#usage)
     * [Get Logger](#get-logger)
     * [Log Message](#log-message)
@@ -14,22 +13,6 @@ Table of Contents
     * [Appenders](#appenders)
     * [Rotaters](#rotaters)
     * [Transformers](#transformers)
-
-## Add Dependency
-
-You can use vgo get:
-
-```sh
-vgo get github.com/hsiafan/vlog
-```
-
-If using go dep, add constraint to Gopkg.toml:
-
-```toml
-[[constraint]]
-  name = "github.com/hsiafan/vlog"
-  version = "0.3.2"
-```
 
 ## Usage
 
