@@ -128,34 +128,82 @@ func (l *Logger) Critical(message string, args ...interface{}) error {
 	return l.log(Critical, message, args...)
 }
 
-// IsTraceEnable if this logger log trace message
-func (l *Logger) IsTraceEnable() bool {
+// TraceEnabled if this logger log trace message
+func (l *Logger) TraceEnabled() bool {
 	return l.Level() <= Trace
 }
 
-// IsDebugEnable if this logger log debug message
-func (l *Logger) IsDebugEnable() bool {
+// DebugEnabled if this logger log debug message
+func (l *Logger) DebugEnabled() bool {
 	return l.Level() <= Debug
 }
 
-// IsInfoEnable if this logger log info message
-func (l *Logger) IsInfoEnable() bool {
+// InfoEnabled if this logger log info message
+func (l *Logger) InfoEnabled() bool {
 	return l.Level() <= Info
 }
 
-// IsWarnEnable if this logger log warn level message
-func (l *Logger) IsWarnEnable() bool {
+// WarnEnabled if this logger log warn level message
+func (l *Logger) WarnEnabled() bool {
 	return l.Level() <= Warn
 }
 
-// IsErrorEnable if this logger log error message
-func (l *Logger) IsErrorEnable() bool {
+// ErrorEnabled if this logger log error message
+func (l *Logger) ErrorEnabled() bool {
 	return l.Level() <= Error
 }
 
-// IsCriticalEnable if this logger log critical message
-func (l *Logger) IsCriticalEnable() bool {
+// CriticalEnabled if this logger log critical message
+func (l *Logger) CriticalEnabled() bool {
 	return l.Level() <= Critical
+}
+
+// Trace log message with trace level
+func (l *Logger) LazyTrace(f func() string) error {
+	if !l.TraceEnabled() {
+		return nil
+	}
+	return l.Trace(f())
+}
+
+// Debug log message with debug level
+func (l *Logger) LazyDebug(f func() string) error {
+	if !l.DebugEnabled() {
+		return nil
+	}
+	return l.Debug(f())
+}
+
+// Info log message with info level
+func (l *Logger) LazyInfo(f func() string) error {
+	if !l.InfoEnabled() {
+		return nil
+	}
+	return l.Info(f())
+}
+
+// Warn log message with warn level
+func (l *Logger) LazyWarn(f func() string) error {
+	if !l.WarnEnabled() {
+		return nil
+	}
+	return l.Warn(f())
+}
+
+// log message with error level
+func (l *Logger) LazyError(f func() string) error {
+	if !l.ErrorEnabled() {
+		return nil
+	}
+	return l.Error(f())
+}
+
+// Critical log message with critical level
+func (l *Logger) LazyCritical(f func() string) error {
+	if !l.CriticalEnabled() {
+		return nil
+	}
+	return l.Critical(f())
 }
 
 func (l *Logger) log(level Level, message string, args ...interface{}) error {

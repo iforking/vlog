@@ -1,10 +1,11 @@
 package vlog
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLogger(t *testing.T) {
@@ -33,20 +34,20 @@ func TestLogger(t *testing.T) {
 func TestLoggerJudge(t *testing.T) {
 	logger := CurrentPackageLogger()
 	logger.SetLevel(Off)
-	assert.False(t, logger.IsTraceEnable())
-	assert.False(t, logger.IsErrorEnable())
+	assert.False(t, logger.TraceEnabled())
+	assert.False(t, logger.ErrorEnabled())
 
 	logger.SetLevel(Critical)
-	assert.True(t, logger.IsCriticalEnable())
-	assert.False(t, logger.IsErrorEnable())
+	assert.True(t, logger.CriticalEnabled())
+	assert.False(t, logger.ErrorEnabled())
 
 	logger.SetLevel(Error)
-	assert.True(t, logger.IsErrorEnable())
-	assert.False(t, logger.IsInfoEnable())
+	assert.True(t, logger.ErrorEnabled())
+	assert.False(t, logger.InfoEnabled())
 
 	logger.SetLevel(Trace)
-	assert.True(t, logger.IsTraceEnable())
-	assert.True(t, logger.IsInfoEnable())
+	assert.True(t, logger.TraceEnabled())
+	assert.True(t, logger.InfoEnabled())
 }
 
 func TestLogger_AddAppender(t *testing.T) {
@@ -57,7 +58,6 @@ func TestLogger_AddAppender(t *testing.T) {
 	assert.Equal(t, 2, len(logger.Appenders()))
 	assert.Equal(t, appender, logger.Appenders()[1])
 }
-
 
 func TestFormatMessage(t *testing.T) {
 	assert.Equal(t, "This is a test", formatMessage("This is a test"), "")
