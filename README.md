@@ -38,12 +38,20 @@ logger.Error("start server error:", err)
 logger.Error("start server {}:{} error:", host, port, err)
 ```
 
-Loggers also have IsXxxxEnable methods, to avoid unnecessary converting cost:
+Loggers also have XxxxEnabled methods, to avoid unnecessary converting cost:
 
 ```go
-if logger.IsDebugEnable() {
+if logger.DebugEnabled() {
 	logger.Debug("server accept connection:", expensiveConvert(conn))
 }
+```
+
+Or just use Lazy logger methods:
+
+```go
+logger.LazyDebug(func() string {
+	return "server accept connection:" +  expensiveConvertToString(conn)
+})
 ```
 
 ### Logger Setting
