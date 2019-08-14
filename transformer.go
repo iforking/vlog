@@ -189,7 +189,7 @@ func (f *PatternTransformer) Transform(logger string, level Level, now time.Time
 
 	var logItems []string
 	var caller *caller
-	depth := 4
+	depth := 5
 	for _, item := range f.items {
 		switch item.kind {
 		case text:

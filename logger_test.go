@@ -61,9 +61,13 @@ func TestLogger_AddAppender(t *testing.T) {
 
 func TestFormatMessage(t *testing.T) {
 	assert.Equal(t, "This is a test", formatMessage("This is a test"), "")
-	assert.Equal(t, "This is a test", formatMessage("This is a", "test"), "")
-	assert.Equal(t, "This is 1", formatMessage("This is", 1), "")
 	assert.Equal(t, "This is 1", formatMessage("This is {}", 1), "")
-	assert.Equal(t, "This is 1 2", formatMessage("This is {}", 1, 2), "")
+	assert.Equal(t, "This is 1", formatMessage("This is {}", 1, 2), "")
+	assert.Equal(t, "This is 1, {}", formatMessage("This is {}, {}", 1), "")
 	assert.Equal(t, "1, 2", formatMessage("{}, {}", 1, 2), "")
+}
+
+func TestJoinMessage(t *testing.T) {
+	assert.Equal(t, "test", joinMessage("test"))
+	assert.Equal(t, "test 2", joinMessage("test", "2"))
 }

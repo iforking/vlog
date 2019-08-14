@@ -3,16 +3,17 @@ The Very Log lib for golang
 Table of Contents
 =================
 
-* [Usage](#usage)
-    * [Get Logger](#get-logger)
-    * [Log Message](#log-message)
-    * [Logger Setting](#logger-setting)
-    * [Log Rotate](#log-rotate)
-    * [Override Log Levels](#override-log-levels)
-* [Appendix](#appendix)
-    * [Appenders](#appenders)
-    * [Rotaters](#rotaters)
-    * [Transformers](#transformers)
+- [Table of Contents](#table-of-contents)
+	- [Usage](#usage)
+		- [Get Logger](#get-logger)
+		- [Log Message](#log-message)
+		- [Logger Setting](#logger-setting)
+		- [Log Rotate](#log-rotate)
+		- [Override Log Levels](#override-log-levels)
+	- [Appendix](#appendix)
+		- [Appenders](#appenders)
+		- [Rotaters](#rotaters)
+		- [Transformers](#transformers)
 
 ## Usage
 
@@ -27,15 +28,19 @@ var logger = vlog.CurrentPackageLogger() // using full package name as logger na
 
 ### Log Message
 
-Logger has six levels: Trace/Debug/Info/Warn/Error/Critical.
-Log methods can use format string to format params, if has more params than placeholders, the remain params will be output after formatted string.
+Logger has six levels: Trace/Debug/Info/Warn/Error/Critical, multi messages can be passed to logger methods, the messages are joined with a delimiter space char(' ').
 
 ```go
 logger.Info("start the server")
-logger.Info("start the server at {}:{}", host, port)
 logger.Info("start the server at", host+":"+strconv.itoa(port))
 logger.Error("start server error:", err)
-logger.Error("start server {}:{} error:", host, port, err)
+```
+
+The Logger's xxxFormat methods can use format string to format params, using {} as a placeholder. If has more params than placeholders, the remain params would be omitted. If there ware more placeholders than params, the extra placeholders will be output as original.
+
+```go
+logger.Info("start the server at {}:{}", host, port)
+logger.Error("start server {}:{} error: {}", host, port, err)
 ```
 
 Loggers also have XxxxEnabled methods, to avoid unnecessary converting cost:
