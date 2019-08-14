@@ -1,10 +1,10 @@
 package vlog
 
 import (
-	"sync"
-	"unsafe"
 	"os"
 	"strings"
+	"sync"
+	"unsafe"
 )
 
 var loggerCache = initLogCache()

@@ -10,11 +10,18 @@ import (
 // Appender Should be reused across loggers.
 type Appender interface {
 	// Append append new data to destination. name is the name of logger, level is the level of logger
-	Append(name string, level Level, data []byte) error
+	Append(event AppendEvent) error
 	// get the transformer of this appender
 	Transformer() Transformer
 	// set transformer to this appender
 	SetTransformer(transformer Transformer)
+}
+
+// AppendEvent is a log event passed to Appender
+type AppendEvent struct {
+	LoggerName string
+	Level      Level
+	Message    string // the logger message
 }
 
 // CanFormattedMixin used for impl Appender Transformer/Name... methods
@@ -48,8 +55,8 @@ type ConsoleAppender struct {
 }
 
 // Append log to stdout
-func (ca *ConsoleAppender) Append(name string, level Level, data []byte) error {
-	_, err := ca.file.Write(data)
+func (ca *ConsoleAppender) Append(event AppendEvent) error {
+	_, err := ca.file.WriteString(event.Message)
 	return err
 }
 
@@ -83,7 +90,7 @@ func NewNopAppender() *NopAppender {
 }
 
 // Append silently discard log data
-func (NopAppender) Append(name string, level Level, data []byte) error {
+func (NopAppender) Append(event AppendEvent) error {
 	return nil
 }
 
@@ -101,7 +108,7 @@ func NewBytesAppender() *BytesAppender {
 }
 
 // Append write log data to byte buffer
-func (b *BytesAppender) Append(name string, level Level, data []byte) error {
-	_, err := b.buffer.Write(data)
+func (b *BytesAppender) Append(event AppendEvent) error {
+	_, err := b.buffer.WriteString(event.Message)
 	return err
 }

@@ -53,9 +53,9 @@ func NewFileAppender(path string, rotater Rotater) (*FileAppender, error) {
 }
 
 // Append append new log to file
-func (f *FileAppender) Append(name string, level Level, data []byte) error {
+func (f *FileAppender) Append(event AppendEvent) error {
 	if f.rotater != nil {
-		shouldRotate, suffix := f.rotater.Check(time.Now(), len(data), 1)
+		shouldRotate, suffix := f.rotater.Check(time.Now(), len(event.Message), 1)
 		if shouldRotate {
 			//rotate
 			ext := filepath.Ext(f.path)
@@ -68,7 +68,7 @@ func (f *FileAppender) Append(name string, level Level, data []byte) error {
 		}
 	}
 
-	_, err := f.currentFile().Write(data)
+	_, err := f.currentFile().WriteString(event.Message)
 	return err
 }
 

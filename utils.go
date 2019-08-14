@@ -1,9 +1,9 @@
 package vlog
 
 import (
-	"path/filepath"
-	"os"
 	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
 	"unicode"
 )

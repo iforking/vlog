@@ -3,8 +3,8 @@
 package vlog
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNewSyslogAppender(t *testing.T) {
@@ -16,5 +16,5 @@ func TestNewSyslogAppender(t *testing.T) {
 func TestSyslogAppender_Append(t *testing.T) {
 	appender, _ := NewSyslogAppender("vlog")
 	defer appender.Close()
-	appender.Append("vlog", Info, []byte("This is a test"))
+	appender.Append(AppendEvent{"vlog", Info, "This is a test"})
 }

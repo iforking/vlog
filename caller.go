@@ -1,8 +1,8 @@
 package vlog
 
 import (
-	"runtime"
 	"path"
+	"runtime"
 	"strings"
 )
 

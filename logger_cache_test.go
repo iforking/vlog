@@ -1,9 +1,9 @@
 package vlog
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"testing"
 )
 
 func TestLoad(t *testing.T) {

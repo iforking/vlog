@@ -7,10 +7,18 @@ import (
 	"time"
 )
 
+// LogRecord is one log message
+type LogRecord struct {
+	LoggerName string    // logger name
+	Level      Level     // the level of this logger record
+	LogTime    time.Time // Time
+	Message    string    // the log message
+}
+
 // Transformer convert one log record to byte array data.
 // Transformer should can be share across goroutines, and user Should always reuse transformers.
 type Transformer interface {
-	Transform(logger string, level Level, now time.Time, message string) []byte
+	Transform(record LogRecord) AppendEvent
 }
 
 var defaultTransformer = NewDefaultPatternTransformer()
@@ -185,7 +193,7 @@ func NewDefaultPatternTransformer() *PatternTransformer {
 }
 
 // Transform format log data to byte array data
-func (f *PatternTransformer) Transform(logger string, level Level, now time.Time, message string) []byte {
+func (f *PatternTransformer) Transform(record LogRecord) AppendEvent {
 
 	var logItems []string
 	var caller *caller
@@ -201,17 +209,17 @@ func (f *PatternTransformer) Transform(logger string, level Level, now time.Time
 			} else {
 				timeFormat = item.filter
 			}
-			logItems = append(logItems, now.Format(timeFormat))
+			logItems = append(logItems, record.LogTime.Format(timeFormat))
 		case loggerName:
-			logItems = append(logItems, logger)
+			logItems = append(logItems, record.LoggerName)
 		case loggerLevel:
-			logItems = append(logItems, level.Name())
+			logItems = append(logItems, record.Level.Name())
 		case loggerLevelUpper:
-			logItems = append(logItems, strings.ToUpper(level.Name()))
+			logItems = append(logItems, strings.ToUpper(record.Level.Name()))
 		case loggerLevelLower:
-			logItems = append(logItems, strings.ToLower(level.Name()))
+			logItems = append(logItems, strings.ToLower(record.Level.Name()))
 		case logMessage:
-			logItems = append(logItems, message)
+			logItems = append(logItems, record.Message)
 		case goPackage:
 			if caller == nil {
 				caller = getCaller(depth)
@@ -237,5 +245,6 @@ func (f *PatternTransformer) Transform(logger string, level Level, now time.Time
 		}
 	}
 
-	return []byte(strings.Join(logItems, ""))
+	var message = strings.Join(logItems, "")
+	return AppendEvent{Message: message}
 }

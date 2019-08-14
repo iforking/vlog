@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/syslog"
 	"strconv"
-	"time"
 )
 
 var _ Appender = (*SyslogAppender)(nil)
@@ -38,8 +37,8 @@ var defaultLevelMap = map[Level]syslog.Priority{
 type sysLogTransformer struct {
 }
 
-func (st sysLogTransformer) Transform(logger string, level Level, now time.Time, message string) []byte {
-	return []byte(message)
+func (st sysLogTransformer) Transform(record LogRecord) AppendEvent {
+	return AppendEvent{Message: record.Message}
 }
 
 // NewSyslogAppender create syslog appender, to system syslog daemon.
@@ -67,31 +66,32 @@ func (sa *SyslogAppender) SetLevelMap(levelMap map[Level]syslog.Priority) {
 }
 
 // Append write one log entry to syslog
-func (sa *SyslogAppender) Append(name string, level Level, data []byte) error {
+func (sa *SyslogAppender) Append(event AppendEvent) error {
+	var level = event.Level
 	if priority, ok := sa.levelMap[level]; ok {
 		switch priority {
 		case syslog.LOG_DEBUG:
-			return sa.log.Debug(string(data))
+			return sa.log.Debug(event.Message)
 		case syslog.LOG_INFO:
-			return sa.log.Info(string(data))
+			return sa.log.Info(event.Message)
 		case syslog.LOG_NOTICE:
-			return sa.log.Notice(string(data))
+			return sa.log.Notice(event.Message)
 		case syslog.LOG_WARNING:
-			return sa.log.Warning(string(data))
+			return sa.log.Warning(event.Message)
 		case syslog.LOG_ERR:
-			return sa.log.Err(string(data))
+			return sa.log.Err(event.Message)
 		case syslog.LOG_CRIT:
-			return sa.log.Crit(string(data))
+			return sa.log.Crit(event.Message)
 		case syslog.LOG_ALERT:
-			return sa.log.Alert(string(data))
+			return sa.log.Alert(event.Message)
 		case syslog.LOG_EMERG:
-			return sa.log.Emerg(string(data))
+			return sa.log.Emerg(event.Message)
 		default:
 			return errors.New("unknown syslog level: " + strconv.Itoa(int(priority)))
 		}
 	}
 
-	_, err := sa.log.Write(data)
+	_, err := sa.log.Write([]byte(event.Message))
 	return err
 }
 

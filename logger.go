@@ -241,7 +241,9 @@ func (l *Logger) log(level Level, firstArg interface{}, args ...interface{}) err
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		message := joinMessage(firstArg, args...)
-		l.writeToAppends(level, appenders, message)
+		if err := l.writeToAppends(level, appenders, message); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -250,7 +252,9 @@ func (l *Logger) log(level Level, firstArg interface{}, args ...interface{}) err
 func (l *Logger) logString(level Level, message string) error {
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
-		l.writeToAppends(level, appenders, message)
+		if err := l.writeToAppends(level, appenders, message); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -260,7 +264,9 @@ func (l *Logger) logFormat(level Level, format string, args ...interface{}) erro
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		message := formatMessage(format, args...)
-		l.writeToAppends(level, appenders, message)
+		if err := l.writeToAppends(level, appenders, message); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -270,8 +276,8 @@ func (l *Logger) writeToAppends(level Level, appenders []Appender, message strin
 	//TODO: async, parallel write
 	for _, appender := range appenders {
 		transformer := appender.Transformer()
-		data := transformer.Transform(l.Name(), level, now, message)
-		err := appender.Append(l.Name(), level, data)
+		appendEvent := transformer.Transform(LogRecord{l.Name(), level, now, message})
+		err := appender.Append(appendEvent)
 		if err != nil {
 			//TODO: collection errors
 			return err

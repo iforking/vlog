@@ -1,9 +1,9 @@
 package vlog
 
 import (
-	"testing"
-	"os"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 	"time"
 )
 
@@ -12,7 +12,8 @@ func TestFileAppender_Write(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove("test_file.log")
 
-	appender.Append("", Debug, []byte("This is a test\n"))
+	err = appender.Append(AppendEvent{"", Debug, "This is a test\n"})
+	assert.Nil(t, err)
 }
 
 func TestFileAppender_Write2(t *testing.T) {
@@ -20,7 +21,8 @@ func TestFileAppender_Write2(t *testing.T) {
 	defer os.RemoveAll("multi/")
 	assert.NoError(t, err)
 
-	appender.Append("", Debug, []byte("This is a test\n"))
+	err = appender.Append(AppendEvent{"", Debug, "This is a test\n"})
+	assert.Nil(t, err)
 }
 
 func TestGetLogSuffixes(t *testing.T) {
@@ -42,7 +44,7 @@ func TestGetLogSuffixes(t *testing.T) {
 func TestLogRotate(t *testing.T) {
 	defer os.RemoveAll("logs/")
 	appender, err := NewFileAppender("logs/test_file.log", nil)
-	appender.Append("", Debug, []byte("first log\n"))
+	appender.Append(AppendEvent{"", Debug, "first log\n"})
 	assert.NoError(t, err)
 	appender.rotateFile("logs/test_file.1234.log")
 

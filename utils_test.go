@@ -1,8 +1,8 @@
 package vlog
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestParseSize(t *testing.T) {
