@@ -39,8 +39,8 @@ logger.Error("start server error:", err)
 The Logger's xxxFormat methods can use format string to format params, using {} as a placeholder. If has more params than placeholders, the remain params would be omitted. If there ware more placeholders than params, the extra placeholders will be output as original.
 
 ```go
-logger.Info("start the server at {}:{}", host, port)
-logger.Error("start server {}:{} error: {}", host, port, err)
+logger.InfoFormat("start the server at {}:{}", host, port)
+logger.ErrorFormat("start server {}:{} error: {}", host, port, err)
 ```
 
 Loggers also have XxxxEnabled methods, to avoid unnecessary converting cost:
