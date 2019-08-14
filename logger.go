@@ -193,7 +193,7 @@ func (l *Logger) TraceLazy(f func() string) error {
 	if !l.TraceEnabled() {
 		return nil
 	}
-	return l.Trace(f())
+	return l.logString(Trace, f())
 }
 
 // DebugLazy log message with debug level, and call func to get log message only when log is performed.
@@ -201,7 +201,7 @@ func (l *Logger) DebugLazy(f func() string) error {
 	if !l.DebugEnabled() {
 		return nil
 	}
-	return l.Debug(f())
+	return l.logString(Debug, f())
 }
 
 // InfoLazy log message with info level, and call func to get log message only when log is performed.
@@ -209,7 +209,7 @@ func (l *Logger) InfoLazy(f func() string) error {
 	if !l.InfoEnabled() {
 		return nil
 	}
-	return l.Info(f())
+	return l.logString(Info, f())
 }
 
 // WarnLazy log message with warn level, and call func to get log message only when log is performed.
@@ -217,7 +217,7 @@ func (l *Logger) WarnLazy(f func() string) error {
 	if !l.WarnEnabled() {
 		return nil
 	}
-	return l.Warn(f())
+	return l.logString(Warn, f())
 }
 
 // ErrorLazy log message with error level, and call func to get log message only when log is performed.
@@ -225,7 +225,7 @@ func (l *Logger) ErrorLazy(f func() string) error {
 	if !l.ErrorEnabled() {
 		return nil
 	}
-	return l.Error(f())
+	return l.logString(Error, f())
 }
 
 // CriticalLazy log message with critical level, and call func to get log message only when log is performed.
@@ -233,7 +233,7 @@ func (l *Logger) CriticalLazy(f func() string) error {
 	if !l.CriticalEnabled() {
 		return nil
 	}
-	return l.Critical(f())
+	return l.logString(Critical, f())
 }
 
 // log multi messages, delimited with a white space
@@ -241,6 +241,15 @@ func (l *Logger) log(level Level, firstArg interface{}, args ...interface{}) err
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		message := joinMessage(firstArg, args...)
+		l.writeToAppends(level, appenders, message)
+	}
+	return nil
+}
+
+// log one string message
+func (l *Logger) logString(level Level, message string) error {
+	appenders := l.Appenders()
+	if l.Level() <= level && len(appenders) > 0 {
 		l.writeToAppends(level, appenders, message)
 	}
 	return nil

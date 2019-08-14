@@ -54,7 +54,7 @@ if logger.DebugEnabled() {
 Or just use Lazy logger methods:
 
 ```go
-logger.LazyDebug(func() string {
+logger.DebugLazy(func() string {
 	return "server accept connection:" +  expensiveConvertToString(conn)
 })
 ```

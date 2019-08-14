@@ -20,6 +20,18 @@ func TestLogger(t *testing.T) {
 		" [Info] github.com/hsiafan/vlog - this is a test\n"))
 
 	appender = NewBytesAppender()
+	logger.SetAppenders(appender)
+	logger.InfoFormat("this is a test")
+	assert.True(t, strings.HasSuffix(appender.buffer.String(),
+		" [Info] github.com/hsiafan/vlog - this is a test\n"))
+
+	appender = NewBytesAppender()
+	logger.SetAppenders(appender)
+	logger.InfoLazy(func() string { return "this is a test" })
+	assert.True(t, strings.HasSuffix(appender.buffer.String(),
+		" [Info] github.com/hsiafan/vlog - this is a test\n"))
+
+	appender = NewBytesAppender()
 	transformer, _ := NewPatternTransformer("{time|2006-01-02} {package}/{file} - {message}\n")
 	appender.SetTransformer(transformer)
 	logger.SetAppenders(appender)
