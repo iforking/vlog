@@ -2,11 +2,15 @@ package vlog
 
 import (
 	"fmt"
+	"golang.org/x/time/rate"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
 	"unsafe"
 )
+
+var errLogRateLimiter = rate.NewLimiter(rate.Limit(10.0), 10)
 
 // Level the logger level
 type Level int32
@@ -99,63 +103,63 @@ func (l *Logger) SetTransformerForAppenders(transformer Transformer) {
 }
 
 // Trace log message with trace level
-func (l *Logger) Trace(firstArg interface{}, args ...interface{}) error {
-	return l.log(Trace, firstArg, args...)
+func (l *Logger) Trace(firstArg interface{}, args ...interface{}) {
+	l.log(Trace, firstArg, args...)
 }
 
 // Debug log message with debug level
-func (l *Logger) Debug(firstArg interface{}, args ...interface{}) error {
-	return l.log(Debug, firstArg, args...)
+func (l *Logger) Debug(firstArg interface{}, args ...interface{}) {
+	l.log(Debug, firstArg, args...)
 }
 
 // Info log message with info level
-func (l *Logger) Info(firstArg interface{}, args ...interface{}) error {
-	return l.log(Info, firstArg, args...)
+func (l *Logger) Info(firstArg interface{}, args ...interface{}) {
+	l.log(Info, firstArg, args...)
 }
 
 // Warn log message with warn level
-func (l *Logger) Warn(firstArg interface{}, args ...interface{}) error {
-	return l.log(Warn, firstArg, args...)
+func (l *Logger) Warn(firstArg interface{}, args ...interface{}) {
+	l.log(Warn, firstArg, args...)
 }
 
 // log message with error level
-func (l *Logger) Error(firstArg interface{}, args ...interface{}) error {
-	return l.log(Error, firstArg, args...)
+func (l *Logger) Error(firstArg interface{}, args ...interface{}) {
+	l.log(Error, firstArg, args...)
 }
 
 // Critical log message with critical level
-func (l *Logger) Critical(firstArg interface{}, args ...interface{}) error {
-	return l.log(Critical, firstArg, args...)
+func (l *Logger) Critical(firstArg interface{}, args ...interface{}) {
+	l.log(Critical, firstArg, args...)
 }
 
 // TraceFormat log message with trace level
-func (l *Logger) TraceFormat(format string, args ...interface{}) error {
-	return l.logFormat(Trace, format, args...)
+func (l *Logger) TraceFormat(format string, args ...interface{}) {
+	l.logFormat(Trace, format, args...)
 }
 
 // DebugFormat log message with debug level
-func (l *Logger) DebugFormat(format string, args ...interface{}) error {
-	return l.logFormat(Debug, format, args...)
+func (l *Logger) DebugFormat(format string, args ...interface{}) {
+	l.logFormat(Debug, format, args...)
 }
 
 // InfoFormat log message with info level
-func (l *Logger) InfoFormat(format string, args ...interface{}) error {
-	return l.logFormat(Info, format, args...)
+func (l *Logger) InfoFormat(format string, args ...interface{}) {
+	l.logFormat(Info, format, args...)
 }
 
 // WarnFormat log message with warn level
-func (l *Logger) WarnFormat(format string, args ...interface{}) error {
-	return l.logFormat(Warn, format, args...)
+func (l *Logger) WarnFormat(format string, args ...interface{}) {
+	l.logFormat(Warn, format, args...)
 }
 
 // ErrorFormat message with error level
-func (l *Logger) ErrorFormat(format string, args ...interface{}) error {
-	return l.logFormat(Error, format, args...)
+func (l *Logger) ErrorFormat(format string, args ...interface{}) {
+	l.logFormat(Error, format, args...)
 }
 
 // CriticalFormat log message with critical level
-func (l *Logger) CriticalFormat(format string, args ...interface{}) error {
-	return l.logFormat(Critical, format, args...)
+func (l *Logger) CriticalFormat(format string, args ...interface{}) {
+	l.logFormat(Critical, format, args...)
 }
 
 // TraceEnabled if this logger log trace message
@@ -189,86 +193,89 @@ func (l *Logger) CriticalEnabled() bool {
 }
 
 // TraceLazy log message with trace level, and call func to get log message only when log is performed.
-func (l *Logger) TraceLazy(f func() string) error {
+func (l *Logger) TraceLazy(f func() string) {
 	if !l.TraceEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Trace, f())
+	l.logString(Trace, f())
 }
 
 // DebugLazy log message with debug level, and call func to get log message only when log is performed.
-func (l *Logger) DebugLazy(f func() string) error {
+func (l *Logger) DebugLazy(f func() string) {
 	if !l.DebugEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Debug, f())
+	l.logString(Debug, f())
 }
 
 // InfoLazy log message with info level, and call func to get log message only when log is performed.
-func (l *Logger) InfoLazy(f func() string) error {
+func (l *Logger) InfoLazy(f func() string) {
 	if !l.InfoEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Info, f())
+	l.logString(Info, f())
 }
 
 // WarnLazy log message with warn level, and call func to get log message only when log is performed.
-func (l *Logger) WarnLazy(f func() string) error {
+func (l *Logger) WarnLazy(f func() string) {
 	if !l.WarnEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Warn, f())
+	l.logString(Warn, f())
 }
 
 // ErrorLazy log message with error level, and call func to get log message only when log is performed.
-func (l *Logger) ErrorLazy(f func() string) error {
+func (l *Logger) ErrorLazy(f func() string) {
 	if !l.ErrorEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Error, f())
+	l.logString(Error, f())
 }
 
 // CriticalLazy log message with critical level, and call func to get log message only when log is performed.
-func (l *Logger) CriticalLazy(f func() string) error {
+func (l *Logger) CriticalLazy(f func() string) {
 	if !l.CriticalEnabled() {
-		return nil
+		return
 	}
-	return l.logString(Critical, f())
+	l.logString(Critical, f())
 }
 
 // log multi messages, delimited with a white space
-func (l *Logger) log(level Level, firstArg interface{}, args ...interface{}) error {
+func (l *Logger) log(level Level, firstArg interface{}, args ...interface{}) {
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		message := joinMessage(firstArg, args...)
 		if err := l.writeToAppends(level, appenders, message); err != nil {
-			return err
+			if errLogRateLimiter.Allow() {
+				_, _ = fmt.Fprintln(os.Stderr, "log error", err)
+			}
 		}
 	}
-	return nil
 }
 
 // log one string message
-func (l *Logger) logString(level Level, message string) error {
+func (l *Logger) logString(level Level, message string) {
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		if err := l.writeToAppends(level, appenders, message); err != nil {
-			return err
+			if errLogRateLimiter.Allow() {
+				_, _ = fmt.Fprintln(os.Stderr, "log error", err)
+			}
 		}
 	}
-	return nil
 }
 
 // log formated messages as java slf4j style.
-func (l *Logger) logFormat(level Level, format string, args ...interface{}) error {
+func (l *Logger) logFormat(level Level, format string, args ...interface{}) {
 	appenders := l.Appenders()
 	if l.Level() <= level && len(appenders) > 0 {
 		message := formatMessage(format, args...)
 		if err := l.writeToAppends(level, appenders, message); err != nil {
-			return err
+			if errLogRateLimiter.Allow() {
+				_, _ = fmt.Fprintln(os.Stderr, "log error", err)
+			}
 		}
 	}
-	return nil
 }
 
 func (l *Logger) writeToAppends(level Level, appenders []Appender, message string) error {
@@ -316,7 +323,7 @@ func formatMessage(format string, args ...interface{}) string {
 }
 
 func argToString(arg interface{}) string {
-	return fmt.Sprintf("%v", arg)
+	return fmt.Sprint(arg)
 }
 
 // GetLogger return the logger with name
